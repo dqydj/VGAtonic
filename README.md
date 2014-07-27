@@ -9,9 +9,9 @@ VGAtonic aims to be an embedded video card - a controller and a framebuffer - fo
 
 How it's made:
 
-VHDL for the CPLD
-C/C++ for any Microcontroller and Computer glue
-Python to hold the whole thing together
+ * VHDL for the CPLD
+ * C/C++ for any Microcontroller and Computer glue
+ * Python to hold the whole thing together
 
 How it's licensed:
 

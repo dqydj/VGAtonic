@@ -6,6 +6,8 @@
 --   MHz - a 0.47% error from the VGA standard 25.175 MHz clock (Doing it in the reverse      --
 --   direction - dividing 25.175 MHz by 7 - gives a rainbow pattern for a single phase...     --
 --   no good)                                                                                 --
+--                                                                                            --
+--  License: MIT (see root directory).                                                        --
 ------------------------------------------------------------------------------------------------
 
 

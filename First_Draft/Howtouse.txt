@@ -1,0 +1,9 @@
+For this demo, I've made the protocol as basic as possible (but no simpler, right?):
+
+1) Pull the chip select low.
+2) Write pixels like this: R2R1R0 G2G1G0 B1B0 (where higher numbers are more significant for each pixel.)
+3) That's it, seriously.
+
+The only trick to be aware of?  Setting CS high then pulling it low again will reset the write counter to the upper left hand corner.  You can theoretically use this to skip full screen writes if you're only updating things near the top of the screen.
+
+Don't wed yourself to this protocol though, we'll try to make something better in the final version.  But hey, good first effort, eh?

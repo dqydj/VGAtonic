@@ -9,3 +9,5 @@ The main communication will remain SPI, and is legal between 2.5 and 5v - but we
 We've also added a Gadget Factory Papilio (http://papilio.cc/) compatible (other than the 2.5v pin) header at the bottom, with two slots.  16 CPLD GPIOs are routed there.  Another 3 are routed to the switch near the VGA connector.
 
 All in all, about 3"x3", and $30 for 10 shipped from http://www.elecrow.com/ (DHL option, thanks folks!)
+
+License: MIT (see root directory)

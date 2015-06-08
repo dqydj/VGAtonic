@@ -48,8 +48,10 @@ static uint8_t mode = 3;
 static uint8_t bits = 8;
 
 // Raspberry Pi can handle quite a bit - but our part is limited to 59 and change.  Use 58.
-// On other devices, set this to something sane.
-static uint32_t speed = 58000000;
+// Turns out 58 MHz was a nonsense number.  Let's push our part a bit and use the next legal speed, 62.5 MHz.
+// See the (hilarious) scope picture for it working.
+
+static uint32_t speed = 62500000;
 static uint16_t delay;
 
 static void transfer(int fd, uint8_t * message, size_t message_size)

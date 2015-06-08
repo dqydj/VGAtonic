@@ -10,7 +10,8 @@
 #include <linux/spi/spi.h>
 #include "vgatonic.h"
 
-
+#define SPI_BUS 	    		0
+#define SPI_BUS_CS1 			0
 
 const char this_driver_name[] = "vgatonic_card_on_spi";
 

@@ -59,4 +59,4 @@ __attribute__((section(".modinfo"))) =
 
 MODULE_ALIAS("spi:vgatonic_card_on_spi");
 
-MODULE_INFO(srcversion, "D8E74E4C827DFEA6A159EDF");
+MODULE_INFO(srcversion, "9CC4555ADDB3455AB9A1E70");

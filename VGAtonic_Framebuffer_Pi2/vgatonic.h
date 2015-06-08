@@ -12,16 +12,14 @@
 #define DRVNAME					"vgatonicfb"
 #define WIDTH					640
 #define HEIGHT					480
-#define SPI_BUS 	    		0
-#define SPI_BUS_CS1 			0
 
- // 640*480*8 = 2,457,600 bits.  Max is 23.6 FPS at 58,000,000 Hz.  Scale it back a bit for gpio delays and conservatism.
- // Of course, SPI speed is conservative.  See my calculation here: 
- // https://hackaday.io/project/1943-vgatonic/log/5738-spi-clock-domain-crossing-finally-something-useful
+// 640*480*8 = 2,457,600 bits.  Turns out 58 MHz was a nonsense setting.  62.5 MHz is the closest speed; let's push it just a bit (2.5 MHz)
+// From my max speed calculation.  
+// That means maximum frames per second = 62500000/2457600 = 25.43 FPS
 
  // If you're not on a Raspberry Pi 2 B, change this to something more appropriate!
-#define SPI_BUS_SPEED 			58000000
-#define SPI_FRAMES_PER_SECOND 	22
+#define SPI_BUS_SPEED 			62500000
+#define SPI_FRAMES_PER_SECOND 	25
 
 /* 
 

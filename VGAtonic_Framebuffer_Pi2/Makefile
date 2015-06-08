@@ -1,4 +1,4 @@
-obj-m := vgatonic.o rpi_vgatonic_spi.o
+obj-m := rpi_vgatonic_spi.o vgatonic.o
 KDIR := /lib/modules/$(shell uname -r)/build
 PWD := $(shell pwd)
 

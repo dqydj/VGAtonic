@@ -10,12 +10,7 @@ This implementation of the VGAtonic framebuffer is for the *Raspberry Pi 2 B*.  
 	- 'cat /sys/module/spidev/parameters/bufsiz' to check it took hold
 - In the directory where you have the ko files:
 
-	sudo modprobe sysfillrect
-	sudo modprobe syscopyarea
-	sudo modprobe sysimgblt
-	sudo modprobe fb_sys_fops
-	sudo insmod vgatonic.ko
-	sudo insmod rpi_vgatonic_spi.ko
+	sudo modprobe sysfillrect; sudo modprobe syscopyarea; sudo modprobe sysimgblt; sudo modprobe fb_sys_fops; sudo insmod vgatonic.ko; sudo insmod rpi_vgatonic_spi.ko
 
 - 'dmesg'
 	- Check for messages from VGAtonic at the bottom

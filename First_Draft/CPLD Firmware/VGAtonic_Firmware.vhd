@@ -18,7 +18,7 @@ entity VGAtonic_Firmware is
 		PIXEL			: inout STD_LOGIC_VECTOR(7 downto 0);
 		HSYNC			: inout STD_LOGIC;
 		VSYNC			: inout STD_LOGIC;
-		CPLD_GPIO 	: out STD_LOGIC_VECTOR(16 downto 16) := "0";
+		--CPLD_GPIO 	: out STD_LOGIC_VECTOR(16 downto 16) := "0";
 		
 		-- Memory
 		DATA			: inout STD_LOGIC_VECTOR(7 downto 0);
@@ -68,7 +68,7 @@ architecture Behavioral of VGAtonic_Firmware is
 		PIXEL : INOUT std_logic_vector(7 downto 0);
 		HSYNC : INOUT std_logic;
 		VSYNC : INOUT std_logic;      
-		CPLD_GPIO : OUT std_logic_vector(16 to 16);
+		--CPLD_GPIO : OUT std_logic_vector(16 to 16);
 		ACK_USER_RESET : INOUT std_logic;
 		ACK_SPI_BYTE : OUT std_logic;
 		ADDR : OUT std_logic_vector(18 downto 0);
@@ -104,7 +104,7 @@ begin
 		PIXEL => PIXEL,
 		HSYNC => HSYNC,
 		VSYNC => VSYNC,
-		CPLD_GPIO => CPLD_GPIO,
+		--CPLD_GPIO => CPLD_GPIO,
 		SPI_DATA_CACHE => SPI_DATA_CACHE,
 		SPI_CACHE_FULL_FLAG => SPI_CACHE_FULL_FLAG,
 		SPI_CMD_RESET_FLAG => SPI_CMD_RESET_FLAG,
@@ -118,4 +118,3 @@ begin
 	);
 
 end Behavioral;
-

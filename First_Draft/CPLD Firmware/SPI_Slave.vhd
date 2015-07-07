@@ -4,8 +4,8 @@
 
 --    To determine top speed, look at worst case and count user clocks
 --    1) SPI_CACHE_FULL_FLAG goes high too late for tSU to react
---    2) CACHE_FULL_FLAG(0) = '1'
---    3) CACHE_FULL_FLAG(1) = '1'.  User Logic sends reset signal.
+--    2) CACHE_FULL_FLAG = '1' (Single buffered read to cross domain)
+--    3) CACHE_FULL_FLAG & SPI_CACHE_FULL_FLAG.  User Logic sends reset signal.
 --
 --    
 --    We can accept up to 7 bits of the full SPI (plus a half clock minus setup
@@ -27,7 +27,7 @@
 --    tSPI > ((3 * 39.801) +(3.0 + 3.0))/7.5 = 16.7204 ns
 
 --    For that part combination and our code, SPI speed shouldn't exceed 
---    59.807 MHz...
+--    59.807 MHz...  But in practice, I'm running at 62.5 MHz without problems.  YMMV.
 
 ----------------------------------------------------------------------------------
 
@@ -40,22 +40,31 @@ entity SPI_Slave is
 		--------------------------------------------------------
 		--                   SPI Declarations                 --
 		--------------------------------------------------------
-		-- SPI Pins
-		SCK 							: in STD_LOGIC;
-		SEL 							: in STD_LOGIC;
-		MOSI							: in STD_LOGIC;
-		MISO							: out STD_LOGIC := 'Z';	
+		
+		SEL_SPI							: in STD_LOGIC;
+		
+		-- SPI Pins from World
+		EXT_SCK 							: in STD_LOGIC;
+		EXT_SEL 							: in STD_LOGIC;
+		EXT_MOSI							: in STD_LOGIC;
+		EXT_MISO							: out STD_LOGIC;	
+		
+		-- SPI Pins from AVR
+		AVR_SCK 							: in STD_LOGIC;
+		AVR_SEL 							: in STD_LOGIC;
+		AVR_MOSI							: in STD_LOGIC;
+--		AVR_MISO							: out STD_LOGIC;	-- No need for MISO; the board is backwards here so leave it off.
 		
 		-- One byte FIFO 
-		SPI_DATA_CACHE    		: out STD_LOGIC_VECTOR(7 downto 0) := "00000000";
+		SPI_DATA_CACHE    					: out STD_LOGIC_VECTOR(7 downto 0) := "00000000";
 
-		-- Asynchronous flags for signals to display logic
-		SPI_CACHE_FULL_FLAG 		: out STD_LOGIC := '0'; 
-		SPI_CMD_RESET_FLAG 		: out STD_LOGIC := '0';
+		-- Asynchronous flags for signals sent to display logic
+		SPI_CACHE_FULL_FLAG 				: out STD_LOGIC := '0'; 
+		SPI_CMD_RESET_FLAG 					: out STD_LOGIC := '0';
 		
 		-- Async Flags returned from user logic
-		ACK_USER_RESET          : in STD_LOGIC;
-		ACK_SPI_BYTE            : in STD_LOGIC
+		ACK_USER_RESET          			: in STD_LOGIC;
+		ACK_SPI_BYTE            			: in STD_LOGIC
 	
 	);
 
@@ -63,18 +72,29 @@ end SPI_Slave;
 
 architecture Behavioral of SPI_Slave is
 
-	-- Temporary Storage for SPI (Sneaky: cheat by one bit out of 8 to save a flip-flop)
+	-- Temporary Storage for SPI (Sneaky: cheat by one bit out of 8 to save a flip-flop!)
 	signal SPI_DATA_REG      	: STD_LOGIC_VECTOR(6 downto 0) := "0000000";
 	-- Counter for our receiver
-	signal SCK_COUNTER		 	: STD_LOGIC_VECTOR(2 downto 0) := "000";
+	signal SCK_COUNTER			: STD_LOGIC_VECTOR(2 downto 0) := "000";
 
-
+	signal SCK						: STD_LOGIC := '0';
+	signal SEL						: STD_LOGIC := '0';
+	signal MOSI						: STD_LOGIC := '0';
 begin
 
 	-- Code for SPI receiver
-	SPI_Logic: process (SCK, SEL, ACK_USER_RESET, ACK_SPI_BYTE)
+	SPI_Logic: process (SEL_SPI, SCK, SEL, ACK_USER_RESET, ACK_SPI_BYTE)
 	begin
 	
+	if (SEL_SPI = '1') then
+		SEL <= AVR_SEL;
+		SCK <= AVR_SCK;
+		MOSI <= AVR_MOSI;
+	else
+		SEL <= EXT_SEL;
+		SCK <= EXT_SCK;
+		MOSI <= EXT_MOSI;
+	end if;
 	
 	-- Code to handle 'Mode Reset' in the User Logic
 	if (ACK_USER_RESET = '1') then -- User Logic acknowledges it was reset

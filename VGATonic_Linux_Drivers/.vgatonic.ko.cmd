@@ -1,1 +1,0 @@
-cmd_/home/pi/VGATonic_2_Driver/vgatonic.ko := ld -EL -r  -T ./scripts/module-common.lds --build-id  -o /home/pi/VGATonic_2_Driver/vgatonic.ko /home/pi/VGATonic_2_Driver/vgatonic.o /home/pi/VGATonic_2_Driver/vgatonic.mod.o

@@ -12,6 +12,8 @@ sudo make clean ; sudo make
 sudo modprobe sysfillrect; sudo modprobe syscopyarea; sudo modprobe sysimgblt; sudo modprobe fb_sys_fops; sudo insmod vgatonic.ko; sudo insmod rpi_vgatonic_spi.ko
 
 (You should see activity. Or just do a 'cat /dev/urandom > /dev/fbX' to see writes!)
+
+
 Odroid C1:
 
 I'm on this kernel: Linux odroid 3.10.80-94

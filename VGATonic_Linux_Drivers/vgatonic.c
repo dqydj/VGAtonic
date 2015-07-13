@@ -6,9 +6,10 @@
  *
  * (Notes Retained from Kamal Mostafa)
  #  Layout is based on skeletonfb.c by James Simmons and Geert Uytterhoeven.
+ *  
  *
  * Copyright (C) 2015, PK
- * Inspired by Matt Porter, Neil Greatorex, Kamal Mostafa, and notro
+ * Inspired by Matt Porter, Neil Greatorex, Kamal Mostafa, and notro, along with the broadsheetfb driver by Jaya Kumar
  *
  * This file is subject to the terms and conditions of the GNU General Public
  * License. See the file COPYING in the main directory of this archive for
@@ -28,10 +29,13 @@
 #include <linux/spi/spi.h>
 #include <linux/delay.h>
 #include <linux/uaccess.h>
+
+// See the header file for all of the definitions and lengthy explanations
+
 #include "vgatonic.h"
 
 static struct fb_fix_screeninfo vgatonicfb_fix = {
-	.id 			= "VGATONIC_V1", 
+	.id 			= "VGATONIC_V2", 
 	.type 			= FB_TYPE_PACKED_PIXELS,
 	.visual 		= FB_VISUAL_TRUECOLOR,
 	.xpanstep 		= 0,
@@ -41,12 +45,14 @@ static struct fb_fix_screeninfo vgatonicfb_fix = {
 	.accel 			= FB_ACCEL_NONE,
 };
 
+
 static struct fb_var_screeninfo vgatonicfb_var = {
 	.xres 			= WIDTH,
 	.yres 			= HEIGHT,
 	.xres_virtual 	= WIDTH,
 	.yres_virtual 	= HEIGHT,
 	.bits_per_pixel = BPP,
+	.grayscale      = 0,
 	.nonstd			= 1,
 };
 
@@ -59,7 +65,7 @@ static inline int spi_write_at_speed(struct spi_device *spi, u32 speed_hz, const
 	struct spi_transfer	t = {
 		.tx_buf		= buf,
 		.len		= len,
-		.speed_hz	= speed_hz,
+		.speed_hz   = speed_hz,
 	};
 	
 
@@ -74,10 +80,12 @@ static int vgatonic_write_data_buf(struct vgatonicfb_par *par, u8 *txbuf, int si
 	gpio_set_value(par->cs, 0);
 
 	
+	/* Full Speed SPI */
 	struct spi_message	m;
 	struct spi_transfer	t = {
 		.tx_buf		= txbuf,
 		.len		= size,
+		.speed_hz   = par->spiSpeed,
 	};
 
 	spi_message_init(&m);
@@ -88,6 +96,101 @@ static int vgatonic_write_data_buf(struct vgatonicfb_par *par, u8 *txbuf, int si
 	gpio_set_value(par->cs, 1);
 
 	return retval;
+}
+
+/* 	The deferred io informs us where the framebuffer is dirty.  Tell VGATonic to skip to the nearest
+	Hardware Accelerated Line then return the line number to the requester.
+ */
+static int vgatonicfb_hardware_move(struct vgatonicfb_par *par, int dirty_line)
+{
+	int width = vgatonicfb_resolution_table[par->resIndex].width;
+	int height = vgatonicfb_resolution_table[par->resIndex].height;
+	int start_line = 0;
+	u8 HARDWARE_MOVE = 0b00000000;
+	
+	// Not implemented yet - but don't worry, it's in hardware.  I've got microcontrollers successfully using it,
+	// so this should be revisited.
+
+	// if (start_line != 0) {
+
+	// 	// Send SPI Command
+	// 	/* Chip Select low to warn VGATonic something is coming; in this case a mode change */
+	// 	gpio_set_value(par->cs, 0);
+	// 		struct spi_message	m;
+	// 		struct spi_transfer	t = {
+	// 		.tx_buf		= &HARDWARE_MOVE,
+	// 		.len		= 1,
+	// 		//.speed_hz 	= par->modeChangeSpeed,
+	// 	};
+
+	// 	spi_message_init(&m);
+	// 	spi_message_add_tail(&t, &m);
+
+	// 	int retval = spi_sync(par->spi, &m);
+
+	// 	// Done changing mode
+	// 	gpio_set_value(par->cs, 1);
+
+	// 	if (retval)
+	// 		return -1;
+
+	// }
+
+	return start_line;
+}
+
+/* Change the mode of VGATonic */
+static int vgatonicfb_update_mode(struct vgatonicfb_par *par)
+{
+	gpio_set_value(par->cs, 1);
+
+	// Base value 640x480x8bpp
+	u8 MODECHANGE = 0b00000000;
+
+	// Resolution & Bit depth change
+	MODECHANGE |= vgatonicfb_resolution_table[par->resIndex].modeOrByte;
+	MODECHANGE |=   vgatonicfb_bitdepth_table[par->bppIndex].modeOrByte;
+
+	/* Chip Select low to warn VGATonic something is coming; in this case a mode change */
+	gpio_set_value(par->cs, 0);
+
+	struct spi_message	m;
+	struct spi_transfer	t = {
+		.tx_buf		= &MODECHANGE,
+		.len		= 1,
+	};
+
+	spi_message_init(&m);
+	spi_message_add_tail(&t, &m);
+
+	int retval = spi_sync(par->spi, &m);
+
+	// Increase or decrease frames per second
+	int newFPS = par->spiFPS;
+	newFPS << vgatonicfb_bitdepth_table[par->bppIndex].modeOrByte;
+
+	switch (vgatonicfb_resolution_table[par->resIndex].modeOrByte) {
+		case 1:
+			newFPS *= 4;
+			break;
+		case 2:
+			newFPS *= 16;
+			break ;
+		case 3:
+			newFPS *= 64;
+			break ;
+	}
+	if (newFPS > 60) newFPS = 60;
+
+	// Change our update speed
+	par->info->fbdefio->delay	= HZ/newFPS;
+
+
+	// Done changing mode
+	gpio_set_value(par->cs, 1);
+
+	return retval;
+
 }
 
 /* Reset VGATonic  */
@@ -116,7 +219,12 @@ static void vgatonicfb_update_display(struct vgatonicfb_par *par, const struct f
 	int ret = 0;
 
 
-	// Remember, VGATonic has 8 bit output.  Most likely we are dealing with 16 bit color input.  We need to convert!
+	/* Current settings of monitor */
+	int height = vgatonicfb_resolution_table[par->resIndex].height;
+	int width  =  vgatonicfb_resolution_table[par->resIndex].width;
+	int bpp    =      vgatonicfb_bitdepth_table[par->bppIndex].bpp;
+
+
 	u8 *vmem = par->info->screen_base;
 	int i;
 	u16 *vmem16;
@@ -136,45 +244,70 @@ static void vgatonicfb_update_display(struct vgatonicfb_par *par, const struct f
 	    dh = HEIGHT;
 	}
 
+
+	/* Adjusted for screen size */
+	dh = (dh / (480/height));
+	dw = (dw / (640/width));
+	/* Adjusted width again for bit depth */
+	int bitScaler = 8/bpp;
+	dw /= bitScaler;
+
 	/* Load spi_writing_buffer with image data from the dirty_rect subwindow */
 
 	// We have no way of skipping pixels yet, but we can optimize by not writing beyond
-	// where we actually have changed pixels.  AKA, no need to write the bottom right.
+	// where we actually have changed pixels.  No need to write the bottom right when the menubar changes.
 
 	vmem_start = (WIDTH*dy + dx)*BPP/8; // No need to change this code since we are setting it to 0,0 in the rect.
 
 
-	// Here is where the complication comes into play: we're a 8 bit part, and there are 16 bit pixels.
-	// Make sure you convert in the following code!!!
+	/* 8 bit part, 16 bit pixels */
 
 	vmem16 = (u16 *)((u8 *)vmem + vmem_start);
 	smem   = par->spi_writing_buffer;
 
-
 	for (i=0; i<dh; i++) {
 		int x;
-
-
-	// This didn't matter on my Pi (in fact I had inverted colors when I tried to adjust), but leaving the ifdefs anyway.
-
-#ifdef __LITTLE_ENDIAN
-
+		#ifdef __LITTLE_ENDIAN
 		for (x=0; x<dw; x++) {
-		    smem[x] =  RGB565toRGB332( vmem16[x] ) ;
+			if (bpp == 8) {
+		    	smem[x] =  RGB565toRGB332( vmem16[x] ) ;
+			} else if (bpp == 4) {
+		    	u8 pixel = 0b00000000;
+				pixel |= RGB565toRGBI( vmem16[(x*bitScaler)] )   << 4;
+				pixel |= RGB565toRGBI( vmem16[(x*bitScaler)+1] ) << 0;
+				smem[x] = pixel;
+			} else if (bpp == 2) {
+		    	u8 pixel = 0b00000000;
+				pixel |=   RGB565to4G( vmem16[(x*bitScaler)] )   << 6;
+				pixel |=   RGB565to4G( vmem16[(x*bitScaler)+1] ) << 4;
+				pixel |=   RGB565to4G( vmem16[(x*bitScaler)+2] ) << 2;
+				pixel |=   RGB565to4G( vmem16[(x*bitScaler)+3] ) << 0;
+				smem[x] = pixel;
+			} else {
+				u8 pixel = 0b00000000;
+				pixel |=   RGB565toBW( vmem16[(x*bitScaler)] )   << 7;
+				pixel |=   RGB565toBW( vmem16[(x*bitScaler)+1] ) << 6;
+				pixel |=   RGB565toBW( vmem16[(x*bitScaler)+2] ) << 5;
+				pixel |=   RGB565toBW( vmem16[(x*bitScaler)+3] ) << 4;
+				pixel |=   RGB565toBW( vmem16[(x*bitScaler)+4] ) << 3;
+				pixel |=   RGB565toBW( vmem16[(x*bitScaler)+5] ) << 2;
+				pixel |=   RGB565toBW( vmem16[(x*bitScaler)+6] ) << 1;
+				pixel |=   RGB565toBW( vmem16[(x*bitScaler)+7] ) << 0;
+				smem[x] = pixel;
+			}
 		}
-#else
-		// Someone test a big Endian system for me?
-		for (x=0; x<dw; x++) {
-		    smem[x] = RGB565toRGB332( vmem16[x] );
-		}
-
-#endif
+		#else
+			// Haven't checked.
+		#endif
 		// Increase the counters by one spot.  16 bit vs 8 bit variable, remember
 		smem += dw*BPPVGATONIC/8;
 		vmem16 += WIDTH*BPP/16;
 	}
 
-	/* Send spi_writing_buffer to VGATONIC's local VRAM over SPI */
+
+	/* 	Send spi_writing_buffer to VGATONIC's local VRAM over SPI 
+		Dirty height (starting from zero) * Dirty width (always 640)
+	*/
 	
 	write_nbytes = dw*dh*BPPVGATONIC/8;
 	ret = vgatonic_write_data_buf(par, par->spi_writing_buffer, write_nbytes);
@@ -189,14 +322,13 @@ static void vgatonicfb_update_display(struct vgatonicfb_par *par, const struct f
 
 /* vgatonicfb_deferred_io
 
-		This will get hit 1/FPS times per second, and it will give this driver the updates framebuffer.
-
-		We 
+		This will get hit 1/FPS times per second, and it will give this driver the updated framebuffer.
 
 */
 
 static void vgatonicfb_deferred_io(struct fb_info *info, struct list_head *pagelist)
 {
+
 	struct page *page;
 	int npages = info->fix.smem_len / PAGE_SIZE;
 	int page_low = npages;
@@ -221,26 +353,28 @@ static void vgatonicfb_deferred_io(struct fb_info *info, struct list_head *pagel
 	}
 
 	if (page_high == -1) {
-		pr_debug("VGATONICFB - deferred_io no pages? full update.\n");
+		pr_debug("VGATonic - deferred_io no pages? full update.\n");
 		page_low = 0;
 		page_high = npages - 1;
 	}
-
-	// VGATonic doesn't have a way to change the row yet.  This is a useful fix though, maybe a future version?  
-	// Will allow us to push the limits of the FPS and max out the SPI on VGATonic.
-
+	
+	// For now, blast out the whole page.
 	page_low = 0;
 
-	// The rest of the math still applies - we don't have to write the whole screen; we can stop whenever the dirty pixels stop.
+	// Eventually we should check 'dirty' pixels...
+	//
+	// The rest of the math still applies - we really don't *have* to write the whole screen; we can stop whenever the dirty pixels stop.
 	// That means if something in the menubar changes, we might 'only' be writing 50 lines:
 	// 640*480*8 = 2,457,600 bits/frame, 640*50*8 = 256,000 bits/frame, or 89.6% less congestion on SPI.
-	//
-	// At 58 MHz and serial, it makes a difference.
 
 	rect.dx = 0;
 	rect.width = WIDTH;
 
 	rect.dy = page_low * PAGE_SIZE / (WIDTH*BPP/8);
+
+	/* If we check dirty pixels, we can theoretically cut down writes here by using
+		the VGATonic feature to move to a line */
+
 	rect.height = (page_high - page_low + 1) * PAGE_SIZE / (WIDTH*BPP/8);
 
 	vgatonicfb_update_display(info->par, &rect);
@@ -276,6 +410,112 @@ static void vgatonicfb_deferred_io_touch(struct fb_info *info, const struct fb_f
 	schedule_delayed_work(&info->deferred_work, fbdefio->delay);
 }
 
+/*
+	When there is a query about the capabilities of VGATonic, this is where we check
+	if we can support it with our hardware.
+*/
+static int vgatonicfb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
+{
+
+	int err = 0;
+	struct vgatonicfb_par *par = info->par;
+	int bpp = var->bits_per_pixel >> 3;
+	unsigned long line_size = var->xres_virtual * bpp;
+
+	// Tell them we don't support anything greater than 16 bits
+	// Remember, 16 bits is the minimum expected by many pieces of software, so we present the
+	// fake 16 bit option and just cut it down to 8 ourselves.
+	if (var->bits_per_pixel > 16)
+        return -EINVAL;
+
+    // We aren't increasing our virtual memory... we can only do 640x480x8bpp anyway.
+   	if ((line_size * var->yres_virtual) > info->fix.smem_len)
+        return -ENOMEM; 
+
+    // Let's also keep the virtual resolution below our highest defined amount
+    
+    int foundResIndex = par->resLength;
+    int i = foundResIndex -1;
+    while (i >= 0) {
+    	if ( var->xres <= vgatonicfb_resolution_table[i].width && var->yres <= vgatonicfb_resolution_table[i].height ) {
+    		foundResIndex = i;
+    	}
+    	--i;
+    }
+    if (foundResIndex == par->resLength)
+    	return -EINVAL;
+    par->resIndex = foundResIndex;
+
+    switch (var->bits_per_pixel) {
+
+      	// B&W
+        	case 1:
+        // Four greys
+        	case 2:
+        // 4 bit depth, RGBI 16 Color
+        	case 4:
+        // 8 Bit Depth, RRRGGGBB 256 Color
+         	case 8:
+         	        var->red.offset 	= 0;
+                	var->green.offset 	= 0;
+                 	var->blue.offset 	= 0;
+                	var->red.length 	= 8;
+                	var->green.length 	= 8;
+                	var->blue.length 	= 8;
+                	var->transp.length 	= 0;
+                	var->transp.offset 	= 0;
+                	break;
+        // RGB 565 (Fake, but it's small enough to just write everything.  600 KB!  40KB less than all you'll ever need! )
+            case 16:
+            		var->red.offset 	= 11;
+					var->red.length 	= 5;
+					var->green.offset 	= 5;
+					var->green.length 	= 6;
+					var->blue.offset	= 0;
+					var->blue.length 	= 5;
+					var->transp.offset 	= 0;
+					var->transp.length 	= 0;
+					break;
+			default:
+                 err = -EINVAL;
+    }
+
+    var->red.msb_right 		= 0;
+    var->green.msb_right 	= 0;
+    var->blue.msb_right 	= 0;
+    var->transp.msb_right 	= 0;
+
+    int foundBppIndex = par->bppLength-1;
+    i = foundBppIndex;
+    while (i >= 0) {
+    	if ( var->bits_per_pixel <= vgatonicfb_bitdepth_table[i].bpp ) {
+    		foundBppIndex = i;
+    	}
+
+    	--i;
+    }
+    par->bppIndex = foundBppIndex;
+    var->xres 				= vgatonicfb_resolution_table[par->resIndex].width;
+    var->yres 				= vgatonicfb_resolution_table[par->resIndex].height;
+	var->xres_virtual 		= vgatonicfb_resolution_table[par->resIndex].width;
+	var->yres_virtual 		= vgatonicfb_resolution_table[par->resIndex].height;
+
+
+    return 0;
+
+}
+
+
+/* Send a command to change the mode */
+static int vgatonicfb_set_par(struct fb_info *info)
+{
+        struct vgatonicfb_par *par = info->par;
+        vgatonicfb_update_mode(par);
+
+        /* Sorry, we don't know if it actually succeeded. */
+        return 0;
+}
+
 
 static int vgatonicfb_blank(int blank_mode, struct fb_info *info)
 {
@@ -284,17 +524,18 @@ static int vgatonicfb_blank(int blank_mode, struct fb_info *info)
 	if (blank_mode == FB_BLANK_UNBLANK) {
 		/* do nothing */
 	} else {
-		/* paint the screen black */
+		/* I see a dirty screen and I want it painted black */
 		memset(par->info->screen_base, 0, info->fix.smem_len);
 		vgatonicfb_update_display(par, NULL);
 	}
 	return 0;
 }
 
-
+/* Hit the CS pin a few times to reset the pixel to 0,0 on VGATonic 
+   then paint a pleasing tst pattern so you know it is working. */
 static int vgatonicfb_init_display(struct vgatonicfb_par *par)
 {
-	/* Hit the CS pin a few times to reset the pixel to 0,0 on VGATonic */
+	
 
 	vgatonic_reset(par);
 
@@ -319,6 +560,8 @@ static int vgatonicfb_init_display(struct vgatonicfb_par *par)
 
 	return 0;
 }
+
+
 
 
 /* No hardware acceleration for rects, use system */
@@ -386,7 +629,7 @@ static ssize_t vgatonicfb_write(struct fb_info *info, const char __user *buf, si
 }
 
 
-/* Get those RGB565 values, even though we know we'll be converting them to RGB332 later. */
+/* Get those RGB565 values. */
 static int vgatonicfb_setcolreg(unsigned regno, unsigned red, unsigned green, unsigned blue, unsigned transp, struct fb_info *info)
 {
 	struct vgatonicfb_par *par = info->par;
@@ -402,6 +645,7 @@ static int vgatonicfb_setcolreg(unsigned regno, unsigned red, unsigned green, un
 	return 0;
 }
 
+
 /* Register a bunch of stuff with the OS so it will know how to reach the framebuffer when we are needed */
 
 
@@ -415,11 +659,12 @@ static struct fb_ops vgatonicfb_ops = {
 	.fb_copyarea	= vgatonicfb_copyarea,
 	.fb_imageblit	= vgatonicfb_imageblit,
 	.fb_setcolreg	= vgatonicfb_setcolreg,
+	.fb_check_var   = vgatonicfb_check_var,
+	.fb_set_par 	= vgatonicfb_set_par,
 };
 
 // Tell deferred IO how quickly to wake us up on each sleep.  In the header file the FPS value is set.
 static struct fb_deferred_io vgatonicfb_defio = {
-	.delay			= HZ/SPI_FRAMES_PER_SECOND,
 	.deferred_io	= vgatonicfb_deferred_io,
 };
 
@@ -435,7 +680,7 @@ static int vgatonicfb_probe (struct spi_device *spi)
 	struct vgatonicfb_par *par;
 	int retval = -EINVAL;
 
-	pr_debug("VGATONICFB - loading\n");
+	pr_debug("VGATONIC Framebuffer - loading\n");
 
 	if (chip != VGATONIC_SPI_VIDEO_CARD) {
 		pr_err("%s: only the %s device is supported\n", DRVNAME,
@@ -476,7 +721,7 @@ static int vgatonicfb_probe (struct spi_device *spi)
 	info->fbops 			= &vgatonicfb_ops;
 	info->fix 				= vgatonicfb_fix;
 	info->fix.smem_len 		= vmem_size;
-	info->var = vgatonicfb_var;
+	info->var 				= vgatonicfb_var;
 	/* RGB565 -see notes elsewhere for why. */
 	info->var.red.offset 	= 11;
 	info->var.red.length 	= 5;
@@ -489,9 +734,19 @@ static int vgatonicfb_probe (struct spi_device *spi)
 	info->flags             = FBINFO_FLAG_DEFAULT | FBINFO_VIRTFB;
 	info->fbdefio           = &vgatonicfb_defio;
 
+	info->fbdefio->delay	= HZ/pdata->spi_frames_per_second,
+
 	fb_deferred_io_init(info);
 
 	par = info->par;
+	/* See notes in header - setting a bunch of defaults. */
+	par->bppIndex 			= 3;
+	par->resIndex 			= 3;
+	par->bppLength 			= 4;
+	par->resLength 			= 4;
+	par->spiSpeed         	= pdata->spi_speed;
+	par->spiFPS         	= pdata->spi_frames_per_second;
+
 	par->info = info;
 	par->spi = spi;
 	par->cs = pdata->cs_gpio;
@@ -500,6 +755,8 @@ static int vgatonicfb_probe (struct spi_device *spi)
 
 	spi_set_drvdata(spi, info);
 
+
+	vgatonicfb_update_mode(par);
 	retval = vgatonicfb_init_display(par);
 
 	if (retval < 0)
@@ -510,6 +767,7 @@ static int vgatonicfb_probe (struct spi_device *spi)
 	if (retval < 0)
 		goto fbreg_fail;
 
+	
 	pr_info("fb%d: %s frame buffer device,\n\tusing %d KiB of video memory\n", info->node, info->fix.id, vmem_size);
 
 	return 0;
@@ -590,7 +848,7 @@ module_exit(vgatonicfb_exit);
 MODULE_DESCRIPTION("FB driver for VGATONIC display controller");
 MODULE_AUTHOR("Matt Porter");
 MODULE_AUTHOR("Neil Greatorex");
-MODULE_AUTHOR("Kamal Mostafa <kamal@whence.com>");
+MODULE_AUTHOR("Kamal Mostafa");
 MODULE_AUTHOR("farter");
 MODULE_AUTHOR("notro");
 MODULE_AUTHOR("PK");

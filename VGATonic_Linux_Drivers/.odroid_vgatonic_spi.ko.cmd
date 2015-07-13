@@ -1,0 +1,1 @@
+cmd_/home/pi/VGATonic_2_Driver/odroid_vgatonic_spi.ko := ld -EL -r  -T ./scripts/module-common.lds --build-id  -o /home/pi/VGATonic_2_Driver/odroid_vgatonic_spi.ko /home/pi/VGATonic_2_Driver/odroid_vgatonic_spi.o /home/pi/VGATonic_2_Driver/odroid_vgatonic_spi.mod.o

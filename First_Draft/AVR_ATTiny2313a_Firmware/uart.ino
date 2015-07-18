@@ -40,13 +40,28 @@ void uart_puts(const char *s )
 ******************************************/
 
 /* Turn on the Hardware UART Credit abcminiuser @ http://www.avrfreaks.net/forum/tut-soft-using-usart-interrupt-driven-serial-comms */
-void setup_uart() 
+void inline setup_uart() 
 {
-  UBRRH = (uint8_t)(BAUD_PRESCALE >> 8); 
-  UBRRL = (uint8_t)(BAUD_PRESCALE);
+  uart_speed_9600();
   UCSRB = (1 << RXEN) | (1 << TXEN) | (1 << RXCIE);
   UCSRC = (1 << USBS) | (3 << UCSZ0);
   sei();
+}
+
+void inline uart_speed_9600() {
+  UBRRH = (uint8_t)(BAUD_PRESCALE(9600) >> 8); 
+  UBRRL = (uint8_t)(BAUD_PRESCALE(9600)); 
+}
+
+// Not enough bytes.
+//void inline uart_speed_19200() {
+//  UBRRH = (uint8_t)(BAUD_PRESCALE(19200) >> 8); 
+//  UBRRL = (uint8_t)(BAUD_PRESCALE(19200)); 
+//}
+
+void inline uart_speed_38400() {
+  UBRRH = (uint8_t)(BAUD_PRESCALE(38400) >> 8); 
+  UBRRL = (uint8_t)(BAUD_PRESCALE(38400)); 
 }
 
 /*****************************************

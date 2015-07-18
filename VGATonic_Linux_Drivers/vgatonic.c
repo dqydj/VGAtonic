@@ -79,21 +79,43 @@ static int vgatonic_write_data_buf(struct vgatonicfb_par *par, u8 *txbuf, int si
 	/* Chip Select low to warn VGATonic something is coming */
 	gpio_set_value(par->cs, 0);
 
+	int bytesLeft = size;
+	int retval = 0;
+	while (bytesLeft > 0) {
+
+	  if (bytesLeft > par->maxSPIBytes) {
 	
-	/* Full Speed SPI */
-	struct spi_message	m;
-	struct spi_transfer	t = {
-		.tx_buf		= txbuf,
-		.len		= size,
-		.speed_hz   = par->spiSpeed,
-	};
-
-	spi_message_init(&m);
-	spi_message_add_tail(&t, &m);
-	int retval = spi_sync(par->spi, &m);
-
-	/* Chip Select high to warn VGATonic something is coming */
+	    /* Full Speed SPI */
+	    struct spi_message	m;
+	    struct spi_transfer	t = {
+	      .tx_buf		= txbuf+(size-bytesLeft),
+	      .len		= par->maxSPIBytes,
+	      .speed_hz         = par->spiSpeed,
+	    };
+	    spi_message_init(&m);
+	    spi_message_add_tail(&t, &m);
+	    int retval = spi_sync(par->spi, &m);
+	    bytesLeft -= par->maxSPIBytes;
+	  } else {
+	    	    /* Full Speed SPI */
+	    struct spi_message	m;
+	    struct spi_transfer	t = {
+	      .tx_buf		= txbuf+(size-bytesLeft),
+	      .len		= bytesLeft,
+	      .speed_hz         = par->spiSpeed,
+	    };
+	    spi_message_init(&m);
+	    spi_message_add_tail(&t, &m);
+	    int retval = spi_sync(par->spi, &m);
+	    bytesLeft = 0;
+	  }
+	  
+	  
+	}
+	
+	/* Chip Select high to warn VGATonic something is done */
 	gpio_set_value(par->cs, 1);
+
 
 	return retval;
 }
@@ -746,6 +768,7 @@ static int vgatonicfb_probe (struct spi_device *spi)
 	par->resLength 			= 4;
 	par->spiSpeed         	= pdata->spi_speed;
 	par->spiFPS         	= pdata->spi_frames_per_second;
+	par->maxSPIBytes        = pdata->max_spi_writes;
 
 	par->info = info;
 	par->spi = spi;

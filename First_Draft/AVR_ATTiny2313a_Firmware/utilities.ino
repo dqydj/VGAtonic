@@ -33,16 +33,16 @@ void updateEEPROM()
  *  Overloaded functions here to print lines to screen using various default values or 
  *  with variables passed in.  Should be reasonably self-explanatory
  */
-void inline printColorLine(uint8_t color) 
+void inline printColorLine() 
 {
   for (uint8_t x = 0; x < 160; ++x) {
-        spi_transfer(color);
+        spi_transfer(CURRENT_BACKGROUND_COLOR);
   }
 }
 
 void inline printLinesToScreen(uint8_t pos, uint8_t posLast) 
 {
-  if (pos == 0) { CPLD_HIGH; CPLD_LOW; printColorLine(0B00000000); }
+  if (pos == 0) { CPLD_HIGH; CPLD_LOW; printColorLine(); }
   while (pos < posLast) {
     printLineToScreen("", pos, false);
     pos += 8;
@@ -67,10 +67,11 @@ void printLineToScreen(const char * c, uint8_t pos, boolean showCursor)
 {  
 
   // Move command
+  //if (pos != 0)
   sendControlSignalToVGATonic(0B10000000 | pos);
   CPLD_LOW;
-  uint8_t line_count = 0;
   
+  uint8_t line_count = 0;
   uint8_t tempColor = CURRENT_BACKGROUND_COLOR;
   const char * start = c;
   while (line_count < 8) {
@@ -86,14 +87,16 @@ void printLineToScreen(const char * c, uint8_t pos, boolean showCursor)
     }
     while (pixels_printed < 160) {
       
-      tempColor = CURRENT_BACKGROUND_COLOR;
+      //tempColor = CURRENT_BACKGROUND_COLOR;
       
       /* This hack saves ~ 40 bytes from writing out the whole >= and <=.  Thanks, int division for letting this be true 4 times in a row. */
       if (showCursor == true && line_count == 7) {  
         if (CURRENT_CURSOR == (int)(pixels_printed/4)) tempColor = CURRENT_FOREGROUND_COLOR;
-      } 
+      } else {
+        spi_transfer(CURRENT_BACKGROUND_COLOR);
+      }
         
-      spi_transfer(tempColor);
+      
       ++pixels_printed;
       
       
@@ -165,13 +168,13 @@ void sendControlSignalToVGATonic(uint8_t mByte)
 /*
  * Flip a byte.
  */
-uint8_t reverseByte( uint8_t x ) 
-{ 
-   x = ((x >> 1) & 0x55) | ((x << 1) & 0xaa); 
-   x = ((x >> 2) & 0x33) | ((x << 2) & 0xcc); 
-   x = ((x >> 4) & 0x0f) | ((x << 4) & 0xf0); 
-   return x;    
-}
+//uint8_t reverseByte( uint8_t x ) 
+//{ 
+//   x = ((x >> 1) & 0x55) | ((x << 1) & 0xaa); 
+//   x = ((x >> 2) & 0x33) | ((x << 2) & 0xcc); 
+//   x = ((x >> 4) & 0x0f) | ((x << 4) & 0xf0); 
+//   return x;    
+//}
 
 /*****************************************
 

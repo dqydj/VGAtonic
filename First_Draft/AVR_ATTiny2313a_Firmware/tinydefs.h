@@ -10,8 +10,8 @@
 #define FONTSTORAGE  21 // Where the MSBs of our font reside.  We write 95 bytes from here.
 
 // Serial Constants - Wishlist: change speed.
-#define USART_BAUDRATE 38400
-#define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
+//#define USART_BAUDRATE 38400
+#define BAUD_PRESCALE(prescale) (((F_CPU / (prescale * 16UL))) - 1)
 
 // Macros to flip IOs
 #define CPLD_LOW     PORTB  &= ~(1 << PB0)

@@ -142,6 +142,7 @@ struct vgatonicfb_par {
 	int    	cs;
 	int 	spiSpeed;
 	int 	spiFPS;
+        int     maxSPIBytes;
 	volatile long unsigned int deferred_pages_mask;
 };
 

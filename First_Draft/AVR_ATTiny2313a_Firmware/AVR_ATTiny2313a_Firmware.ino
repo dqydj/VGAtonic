@@ -28,13 +28,14 @@
  *  RX_BUFF                   - Ring buffer of received characters over serial
  *    rxn:      pointer to active buffer element
  *    rx_flag:  raised when we receive a new byte.
+ *  LTCCAL                    - Calibration byte for the LTC6903
  *  
  */
 uint8_t VGATONIC_MODE = 0;
 uint8_t CURRENT_LINE = 0;
 uint8_t CURRENT_CURSOR = 0;
-uint8_t CURRENT_BACKGROUND_COLOR = 0;
-uint8_t CURRENT_FOREGROUND_COLOR = 255;
+uint8_t CURRENT_BACKGROUND_COLOR = 0B00001100;
+uint8_t CURRENT_FOREGROUND_COLOR = 0B00000000;
 char    CURRENT_BUFFER[TERMINAL_LINE_MAX + 1] = "";
 boolean SHOW_CURSOR = false;
 
@@ -46,8 +47,8 @@ volatile uint8_t rx_flag = 0;
 /*
  * These belong to the framebuffer
  */
-uint8_t max_pixel_count     = 0;
 uint8_t current_pixel_count = 0;
+uint8_t LTCCAL; 
 
 
 void setup() 
@@ -64,46 +65,26 @@ void setup()
 #endif EEPROM_UPDATE
 
   OSCCAL = eeprom_read_byte ((uint8_t*)OSCALSPEED);
+  LTCCAL = eeprom_read_byte ((uint8_t*)LTCSPEED);
 
-  // Software SPI (Confused DI and D0 on this version for clock, so we have to bitbang the clock's SPI signal before using the USI)
-  DDRB  |= _BV(PB1);   // as output (D10, CPLD Master)
-  DDRB  |= _BV(PB0);   // as output (D9,  CPLD Select)
-  DDRB  |= _BV(PB4);   // as output (D13, CLK  Select)
-  DDRB  |= _BV(PB7);   // as output (USISCK)
-  DDRB  |= _BV(PB5);   // as output  (DI, temp for clock)
-
-  CLK_HIGH;
-  CLK_LOW;
-  // Define LTC speed by sending 2 bytes over SPI.
-  // Works out to roughly 50.344 MHz, almost exactly 2x the 640x480 VGA clock 
-  // (that was the goal; it's close enough for most monitors).
-  bitbang_byte_out(0b11111010);
-  bitbang_byte_out( eeprom_read_byte ((uint8_t*)LTCSPEED) );
-
-  CLK_HIGH;
-
-  // Turn on regular SPI now, once the LTC is ready.
-  DDRB  |= _BV(PB6);   // as output (DO)
-  DDRB  &= ~_BV(PB5);  // as input  (DI)
-  PORTB |= _BV(PB5);   // pullup on (DI)
-
-
+  bitbang_bytes_out();
   // Welcome message stored in EEPROM
   CPLD_TAKE;
   sendControlSignalToVGATonic(0B00000010); // 160x120, 256 colors
   CPLD_LOW;
   printLinesToScreen(0,120);
   uint8_t myCounter = 0;
-  do {
-    CURRENT_BUFFER[myCounter] = eeprom_read_byte ((uint8_t*)(HELLOMSG + myCounter));
-  } while (CURRENT_BUFFER[myCounter++] != '\0');
-  printLineToScreen(CURRENT_BUFFER);
-  CURRENT_BUFFER[0] = '\0';
+//  do {
+//    CURRENT_BUFFER[myCounter] = eeprom_read_byte ((uint8_t*)(HELLOMSG + myCounter));
+//  } while (CURRENT_BUFFER[myCounter++] != '\0');
+//  printLineToScreen(CURRENT_BUFFER);
+  //printLineToScreen("VT");
+  //CURRENT_BUFFER[0] = '\0';
 
   // Give control to external SPI (to write from computers, microcontrollers, etc.
   CPLD_HIGH;
   CPLD_GIVE;
-
+  
   // Almost ready, turn on UART
   setup_uart();
 }
@@ -127,19 +108,20 @@ void loop()
   if (rx_flag == 1) { // New UART Data
     rx_flag = 0;
     for (int i = 0; i < rxn; i++) { // For each new character received
-      const char currentChar = RX_BUFF[i];
+      char currentChar = RX_BUFF[i];
       if        (VGATONIC_MODE == 7) { // 'Y' Set Position Cursor
-        if ( currentChar < 71) {
-          CURRENT_CURSOR = (currentChar-32);
+        currentChar-= 32;
+        if ( currentChar < 39) {
+          CURRENT_CURSOR = currentChar;
           insCharRange(' ', 0, 38);
-         
           uart_transmit(0x06);
         }
         VGATONIC_MODE = 0;
       } else if (VGATONIC_MODE == 6) { // 'Y' Set Position Line
         //CURRENT_LINE = (uint8_t)112;
-        if ( currentChar < 46) {
-          CURRENT_LINE = (currentChar-32)*8;
+        currentChar -= 32;
+        if ( currentChar < 14) {
+          CURRENT_LINE = (currentChar)*8;
           uart_transmit(0x06);
         }
         VGATONIC_MODE = 7;
@@ -151,11 +133,13 @@ void loop()
         CURRENT_FOREGROUND_COLOR = currentChar; VGATONIC_MODE = 0;
       } else if (VGATONIC_MODE == 2) { // BG Color Change
         CURRENT_BACKGROUND_COLOR = currentChar; VGATONIC_MODE = 0;
-      } else if (VGATONIC_MODE == 1) { // Escape sequence
+      } else if (VGATONIC_MODE == 1 || VGATONIC_MODE == 8) { // Escape sequence
         interpretVT52EscapeSequence(currentChar);
       } else {
         handleTerminalMode(currentChar);
       }
+      
+      
       RX_BUFF[0] = 0x00;
       rxn = 0;
     }
@@ -176,16 +160,16 @@ void loop()
  */
 void handleFramebufferMode(const char currentChar) 
 {
-  if (max_pixel_count == 0) {
-    current_pixel_count = 0;
-    max_pixel_count = currentChar;
-    uart_transmit(currentChar); // Start of header
-  } else {
+//  if (max_pixel_count == 0) {
+//    current_pixel_count = 0;
+//    max_pixel_count = currentChar;
+//    uart_transmit(currentChar); // Start of header
+//  } else {
     spi_transfer(currentChar);
     ++current_pixel_count;
-  }
+//  }
 
-  if (max_pixel_count == current_pixel_count) {
+  if (255 == current_pixel_count) {
     VGATONIC_MODE = 0;
     uart_transmit(0x17);
   }

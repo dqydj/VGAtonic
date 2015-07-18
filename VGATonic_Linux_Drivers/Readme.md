@@ -11,12 +11,12 @@ Install all of the normal build tools and a recent gcc/g++. You may need an upda
 
 Once you've built, here is how you load VGATonic each time (you can automate this, of course!):
 
-> sudo modprobe sysfillrect 
-> sudo modprobe syscopyarea 
-> sudo modprobe sysimgblt
-> sudo modprobe fb_sys_fops
-> sudo insmod vgatonic.ko
-> sudo insmod rpi_vgatonic_spi.ko
+> sudo modprobe sysfillrect  
+> sudo modprobe syscopyarea  
+> sudo modprobe sysimgblt  
+> sudo modprobe fb_sys_fops  
+> sudo insmod vgatonic.ko  
+> sudo insmod rpi_vgatonic_spi.ko  
 
 (You should see activity. Or just do a 'cat /dev/urandom > /dev/fbX' to see writes!)
 

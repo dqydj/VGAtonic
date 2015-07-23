@@ -17,6 +17,7 @@ The *second* run, comment that line out - you’re ready to program again.  Conn
 
     Escape - m (Master mode)
     Escape - s (Select CPLD)
+    Escape - Z - r (Set to 8 bit color depth at 160x120 resolution, since we don't know what we were in.)
 
 Now send it a bunch of random characters - congratulations, you are talking to a serial terminal emulator… in only 128 Bytes of RAM!!!
 

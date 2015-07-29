@@ -22,6 +22,7 @@
 #include <linux/string.h>
 #include <linux/mm.h>
 #include <linux/vmalloc.h>
+//#include <linux/kmalloc.h>
 #include <linux/slab.h>
 #include <linux/init.h>
 #include <linux/fb.h>
@@ -292,7 +293,7 @@ static void vgatonicfb_update_display(struct vgatonicfb_par *par, const struct f
 		#ifdef __LITTLE_ENDIAN
 		for (x=0; x<dw; x++) {
 			if (bpp == 8) {
-		    	smem[x] =  RGB565toRGB332( vmem16[x] ) ;
+			  smem[x] =  RGB565toRGB332( vmem16[x] ) ;
 			} else if (bpp == 4) {
 		    	u8 pixel = 0b00000000;
 				pixel |= RGB565toRGBI( vmem16[(x*bitScaler)] )   << 4;
@@ -478,15 +479,15 @@ static int vgatonicfb_check_var(struct fb_var_screeninfo *var, struct fb_info *i
         	case 4:
         // 8 Bit Depth, RRRGGGBB 256 Color
          	case 8:
-         	        var->red.offset 	= 0;
-                	var->green.offset 	= 0;
-                 	var->blue.offset 	= 0;
-                	var->red.length 	= 8;
-                	var->green.length 	= 8;
-                	var->blue.length 	= 8;
-                	var->transp.length 	= 0;
-                	var->transp.offset 	= 0;
-                	break;
+         	        /* var->red.offset 	= 0; */
+                	/* var->green.offset 	= 0; */
+                 	/* var->blue.offset 	= 0; */
+                	/* var->red.length 	= 8; */
+                	/* var->green.length 	= 8; */
+                	/* var->blue.length 	= 8; */
+                	/* var->transp.length 	= 0; */
+                	/* var->transp.offset 	= 0; */
+                	/* break; */
         // RGB 565 (Fake, but it's small enough to just write everything.  600 KB!  40KB less than all you'll ever need! )
             case 16:
             		var->red.offset 	= 11;
@@ -519,10 +520,14 @@ static int vgatonicfb_check_var(struct fb_var_screeninfo *var, struct fb_info *i
     par->bppIndex = foundBppIndex;
     var->xres 				= vgatonicfb_resolution_table[par->resIndex].width;
     var->yres 				= vgatonicfb_resolution_table[par->resIndex].height;
-	var->xres_virtual 		= vgatonicfb_resolution_table[par->resIndex].width;
-	var->yres_virtual 		= vgatonicfb_resolution_table[par->resIndex].height;
+    var->xres_virtual 		= vgatonicfb_resolution_table[par->resIndex].width;
+    var->yres_virtual 		= vgatonicfb_resolution_table[par->resIndex].height;
 
-
+	// Always have 16 bits as our bits per pixel mode - but, yes, internally we are setting it up so
+	// we convert to the 'other' color depths.  Take a look at vgatonic.h to see the conversion macros.
+	// 
+	// 16 depths is pseudo, we take MSBs to get 8, 4, 2, or 1 bit color to send to VGATonic.
+    var->bits_per_pixel=16;
     return 0;
 
 }
@@ -730,8 +735,8 @@ static int vgatonicfb_probe (struct spi_device *spi)
 	if (!vmem)
 		goto alloc_fail;
 
-	/* Allocate spi write buffer */
-	spi_writing_buffer = vzalloc(vmem_size);
+	/* Allocate spi write buffer, DMA Ready (kmalloc ensures physically continuous memory if it succeeds) */
+        spi_writing_buffer = kmalloc(vmem_size, GFP_KERNEL);
 	if (!spi_writing_buffer)
 		goto alloc_fail;
 

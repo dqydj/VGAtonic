@@ -4,7 +4,7 @@
 
 // Change these to something appropriate for your board.
 #define SPI_BUS_SPEED 			32000000
-#define SPI_FRAMES_PER_SECOND 	12
+#define SPI_FRAMES_PER_SECOND 	12.75
 
 /* For many boards, only the next few lines need to be changed */
 

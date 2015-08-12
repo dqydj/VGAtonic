@@ -4,7 +4,7 @@
 
 // Change these to something appropriate for your board.  Roughly SPEED/(640*480*8) (subtract one or two) is the max FPS.
 #define SPI_BUS_SPEED 			48000000
-#define SPI_FRAMES_PER_SECOND 	12
+#define SPI_FRAMES_PER_SECOND 	19.25
 
 /* For many boards, only the next few lines need to be changed */
 
@@ -15,7 +15,7 @@
    Device interfering */
 #define FAKE_CS					48
 // Define the maximum number of SPI writes your hardware can support.  For many, it's unlimited, so use 307200.
-#define MAX_SPI_WRITES			159
+#define MAX_SPI_WRITES			307200
 
 
 const char this_driver_name[] = "vgatonic_card_on_spi";

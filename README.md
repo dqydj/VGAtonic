@@ -39,5 +39,5 @@ As for the software:
 
 **How it's licensed:**
 
-MIT (Hardware)
-GPL (Software)
+MIT (Hardware, Firmware, Python Examples, Arduino Code)
+GPL (Linux Framebuffer Drivers, Linux Userspace Code)

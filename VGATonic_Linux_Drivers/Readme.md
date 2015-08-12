@@ -63,4 +63,22 @@ The easiest way to know it worked, however, is to get it to react from your plat
 
 You should see random pixels everywhere.  As for how to use your screen, check out the excellent resources Notro has compiled for fbtft.  I have generally tested these platforms by starting the x server then using a browser for a bit just to see how responsive it is.
 
+License:
+
+    VGATonic Linux Framebuffer Driver Code
+    Copyright (C) 2015 PK
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, version 2 of the License.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 > Written with [StackEdit](https://stackedit.io/).

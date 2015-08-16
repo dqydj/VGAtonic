@@ -7,18 +7,28 @@ NET "EXT_MOSI" 		LOC = "P7";
 NET "EXT_MISO" 		LOC = "P8";
 NET "EXT_SEL_CPLD" 	LOC = "P9";
 
+// Outside World SPI Interface
+NET "AVR_SCK" 			LOC = "P10";
+NET "AVR_MOSI" 		LOC = "P11";
+//NET "AVR_MISO" 		LOC = "P12";
+//NET "AVR_SEL_CPLD" 	LOC = "P13";
+// Control Signal to Ignore Outside SPI - Switch 1
+//NET "SW_1" 				LOC = "P2";
+NET "AVR_CPLD_EXT_1"	LOC = "P14";
+NET "AVR_CPLD_EXT_2"	LOC = "P15";
+
 // VGA Interface
-NET "Pixel<7>"			LOC = "P1"; // Red MSB
-NET "Pixel<6>"			LOC = "P97"; // Red Middle
-NET "Pixel<5>"			LOC = "P96"; // Red LSB
+NET "Pixel<8>"			LOC = "P1"; // Red MSB
+NET "Pixel<7>"			LOC = "P97"; // Red Middle
+NET "Pixel<6>"			LOC = "P96"; // Red LSB
 
-NET "Pixel<4>"			LOC = "P95"; // Green MSB
-NET "Pixel<3>"			LOC = "P94"; // Green Middle
-NET "Pixel<2>"			LOC = "P93"; // Green LSB
+NET "Pixel<5>"			LOC = "P95"; // Green MSB
+NET "Pixel<4>"			LOC = "P94"; // Green Middle
+NET "Pixel<3>"			LOC = "P93"; // Green LSB
 
-NET "Pixel<1>"			LOC = "P92"; // Blue MSB
-NET "Pixel<0>"			LOC = "P91"; // Blue Middle
-//NET "Pixel<8>"			LOC = "P90"; // Blue LSB - Optional; needed for true greys
+NET "Pixel<2>"			LOC = "P92"; // Blue MSB
+NET "Pixel<1>"			LOC = "P91"; // Blue Middle
+NET "Pixel<0>"			LOC = "P90"; // Blue LSB - Optional; needed for true greys
 
 NET "VSYNC"				LOC = "P89"; // Vertical Sync Signal
 NET "HSYNC"				LOC = "P87"; // Vertical Sync Signal

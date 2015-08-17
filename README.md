@@ -39,6 +39,9 @@ As for the software:
 
 **How it's licensed:**
 
-MIT (Hardware, Firmware, Python Examples, Arduino Code)
-GPL (Linux Framebuffer Drivers, Linux Userspace Code)
-LGPL (Changes to Arduino-Tiny Core)
+MIT (Hardware, Firmware, Python Examples, Arduino Code)  
+
+GPL (Linux Framebuffer Drivers, Linux Userspace Code)  
+
+LGPL (Changes to Arduino-Tiny Core)  
+

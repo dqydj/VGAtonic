@@ -24,9 +24,9 @@ Importantly, all of these accelerations stack, so if you have a 4 MHz link, you 
 
 **How it's made:**
 
-See the entire parts list in [this Hackaday Prize post](https://hackaday.io/project/1943-vgatonic/log/7136-breaking-down-the-bom-costs-per-board).  As part of the project, to keep it *interesting* I used modestly spec'd parts - a 144 Macrocell Xilinx XC95144XL CPLD instead of a large FPGA, and an 8 bit 128-Bytes of RAM Atmel ATTiny 2313a Microcontroller instead of one of the larger Atmel parts or something 32-bit (it's not even the largest part in its footprint).  Additionally, the pixel clock is provided by Linear Technology's LTC6903, allowing it to be changed on the fly (and, undoubtedly, tuned for specific monitors) by the microcontroller.  
+See the entire parts list in [this Hackaday Prize post](https://hackaday.io/project/6309-spi-and-ttl-serial-vga-graphics-card-vgatonic/log/21984-updated-bill-of-materials).  As part of the project, to keep it *interesting* (and keep costs down) I used modestly spec'd parts - a 144 Macrocell Xilinx XC95144XL CPLD instead of a large FPGA, and an 8 bit 128-Bytes of RAM Atmel ATTiny 2313a Microcontroller instead of one of the larger Atmel parts or something 32-bit (it's not even the largest part in its footprint).  Additionally, the pixel clock is provided by Linear Technology's LTC6903, allowing it to be changed on the fly (and, undoubtedly, tuned for specific monitors) by the microcontroller.  
 
-You can [find the schematics here](https://github.com/dqydj/VGAtonic/tree/master/First_Draft).
+You can find the schematics in the Rev A directory..
 
 As for the software:
 
@@ -41,3 +41,4 @@ As for the software:
 
 MIT (Hardware, Firmware, Python Examples, Arduino Code)
 GPL (Linux Framebuffer Drivers, Linux Userspace Code)
+LGPL (Changes to Arduino-Tiny Core)

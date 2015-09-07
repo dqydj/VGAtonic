@@ -1,0 +1,63 @@
+* D:\KiCad Files\VGATonic RevB\VGATonic RevB.cir
+
+* EESchema Netlist Version 1.1 (Spice format) creation date: 8/15/2015 10:07:59 AM
+
+* To exclude a component from the Spice Netlist add [Spice_Netlist_Enabled] user FIELD set to: N
+* To reorder the component spice node sequence add [Spice_Node_Sequence] user FIELD and define sequence: 2,1,0
+
+* Sheet Name: /
+IC1  /~AVR_RESET ? ? ? ? ? ? ? ? GND /AVR_CPLD_EXT_3 /AVR_CPLD_EXT_2 /AVR_CPLD_EXT_1 /AVR_CPLD_RESET /~AVR_SEL_CPLD /~AVR_SEL_CLK /AVR_MOSI_EXT /AVR_MISO_EXT /AVR_SCK +3V3 ATTINY2313A-S		
+C1  +3V3 GND 0.1uF		
+C2  +3V3 GND 0.1uF		
+C3  +3V3 GND 0.1uF		
+C4  +3V3 GND 0.1uF		
+C5  +3V3 GND 0.1uF		
+C6  +3V3 GND 0.1uF		
+C7  +3V3 GND 0.1uF		
+C8  +3V3 GND 0.1uF		
+C9  +3V3 GND 0.1uF		
+C10  +3V3 GND 0.1uF		
+C11  +3V3 GND 0.1uF		
+C12  +3V3 GND 1uF		
+U3  ? ? /A0 /A1 /A2 /A3 /A4 /~CE /IO0 /IO1 +3V3 GND /IO2 /IO3 /~WE /A5 /A6 /A7 /A8 /A9 ? ? ? ? ? /A10 /A11 /A12 /A13 /A14 /IO4 /IO5 +3V3 GND /IO6 /IO7 /~OE /A15 /A16 /A17 /A18 ? ? ? IS61LV5128AL		
+U1  GND /AVR_MISO_EXT /AVR_SCK /~AVR_SEL_CLK ? Net-_U1-Pad6_ +3V3 +3V3 LTC6903		
+U2  ? ? ? ? +3V3 ? ? ? /~EXT_SEL_CPLD /AVR_SCK /AVR_MISO_EXT /AVR_MOSI_EXT /~AVR_SEL_CPLD /AVR_CPLD_EXT_1 /AVR_CPLD_EXT_2 /AVR_CPLD_EXT_3 ? ? ? ? GND Net-_U1-Pad6_ ? ? ? +3V3 ? ? ? ? GND ? ? ? ? ? ? +3V3 ? ? ? ? ? GND ? ? ? ? ? /A9 +3V3 /A8 /A7 /A6 /A5 /~WE +3V3 /IO3 /IO2 /IO1 /IO0 GND /~CE /A4 /A3 /A2 /A1 /A0 GND /A10 /A11 /A12 /A13 /A14 GND /IO4 /IO5 /IO6 /IO7 /~OE /A15 /A16 ? GND /A17 /A18 ? +3V3 ? ? ? ? ? ? ? ? ? +3V3 /AVR_CPLD_RESET GND XC95144PQ100-100TQFP		
+R2  +3V3 /~AVR_RESET 4.7k		
+R1  +3V3 /~AVR_SEL_CLK 10k		
+R3  /~EXT_SEL_CPLD +3V3 10k		
+R4  /~AVR_SEL_CPLD +3V3 10k		
+* Sheet Name: /OutputsAndInputs/
+R11  ? Net-_J2-Pad1_ 510		
+R12  ? Net-_J2-Pad1_ 1k		
+R13  ? Net-_J2-Pad1_ 2k		
+R8  ? Net-_J2-Pad2_ 510		
+R9  ? Net-_J2-Pad2_ 1k		
+R10  ? Net-_J2-Pad2_ 2k		
+R5  ? Net-_J2-Pad3_ 510		
+R6  ? Net-_J2-Pad3_ 1k		
+R7  ? Net-_J2-Pad3_ 2k		
+F1  VCC +5V 0.75A HOLD 6V PTC		
+U4  GND +3V3 +5V NCP1117ST33T3G		
+C14  +5V GND 10uF		
+C15  +3V3 GND 10uF		
+C13  +3V3 GND 47uF		
+P6  ? VCC ? ? ? GND CONN_02X03		
+J1  +3V3 Net-_J1-Pad2_ Net-_J1-Pad3_ GND ? USB_B		
+P5  Net-_J1-Pad3_ Net-_J1-Pad2_ CONN_01X02		
+J2  Net-_J2-Pad1_ Net-_J2-Pad2_ Net-_J2-Pad3_ ? Net-_J2-Pad10_ Net-_J2-Pad10_ Net-_J2-Pad10_ ? ? Net-_J2-Pad10_ ? ? ? ? ? VGA-HD-15		
+C16  /OutputsAndInputs/XTAL_1 GND 22pF		
+C17  /OutputsAndInputs/XTAL_2 GND 22pF		
+Y1  /OutputsAndInputs/XTAL_1 /OutputsAndInputs/XTAL_2 8 MHz		
+P1  ? ? GND CONN_01X03		
+P2  ? ? ? ? GND CONN_01X05		
+P3  +5V GND CONN_01X02		
+P4  ? +3V3 ? ? ? GND CONN_02X03		
+P7  ? ? ? ? GND ? ? ? ? GND ? ? ? ? GND ? ? ? ? GND ? ? GND ? ? ? ? GND ? ? CONN_01X30		
+D1  GND Net-_D1-Pad2_ Green LED		
+R14  Net-_D1-Pad2_ +5V 330 Ohm		
+R15  Net-_D2-Pad2_ +3V3 150 Ohm		
+R16  Net-_D3-Pad2_ +3V3 150 Ohm		
+D2  ? Net-_D2-Pad2_ Yellow LED		
+D3  ? Net-_D3-Pad2_ Orange LED		
+
+.end

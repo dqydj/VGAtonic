@@ -1,0 +1,55 @@
+Reference	 Value	 Footprint	Cost / Board	Supplier	Quantity Required	Notes
+IC1	ATTINY4313	Housings_SOIC:SOIC-20_7.5x12.8mm_Pitch1.27mm	1.59	Newark	1	
+C1	0.1uF	Capacitors_SMD:C_0603	0.00359	Digikey	4000	X7R
+C2	0.1uF	Capacitors_SMD:C_0603	0.00359	Digikey	4000	X7R
+C3	0.1uF	Capacitors_SMD:C_0603	0.00359	Digikey	4000	X7R
+C4	0.1uF	Capacitors_SMD:C_0603	0.00359	Digikey	4000	X7R
+C5	0.1uF	Capacitors_SMD:C_0603	0.00359	Digikey	4000	X7R
+C6	0.1uF	Capacitors_SMD:C_0603	0.00359	Digikey	4000	X7R
+C7	0.1uF	Capacitors_SMD:C_0603	0.00359	Digikey	4000	X7R
+C8	0.1uF	Capacitors_SMD:C_0603	0.00359	Digikey	4000	X7R
+C9	0.1uF	Capacitors_SMD:C_0603	0.00359	Digikey	4000	X7R
+C10	0.1uF	Capacitors_SMD:C_0603	0.00359	Digikey	4000	X7R
+C11	0.1uF	Capacitors_SMD:C_0603	0.00359	Digikey	4000	X7R
+C12	1uF	Capacitors_SMD:C_0603	0.1	Digikey	1	X7R
+U3	IS61LV5128AL	Footprints:tsop2-44	4.85	Jameco	1	
+U1	LTC6903	Housings_SSOP:MSOP-8_3x3mm_Pitch0.65mm	3.92	Digikey	1	
+U2	XC95144PQ100-100TQFP	Housings_QFP:TQFP-100_14x14mm_Pitch0.5mm	7.25	Digikey	1	
+R2	4.7k	Resistors_SMD:R_0805	0.018	Digikey	10	5.00%
+R1	10k	Resistors_SMD:R_0805	0.018	Digikey	10	5.00%
+R3	10k	Resistors_SMD:R_0805	0.018	Digikey	10	5.00%
+R4	10k	Resistors_SMD:R_0805	0.018	Digikey	10	5.00%
+FID1	CONN_01X01	Fiducials:Fiducial_1mm_Dia_2.54mm_Outer_CopperTop	0			5.00%
+FID2	CONN_01X01	Fiducials:Fiducial_1mm_Dia_2.54mm_Outer_CopperTop	0			5.00%
+R11	510	Resistors_SMD:R_0805	0.021	Digikey	10	1.00%
+R12	1k	Resistors_SMD:R_0805	0.021	Digikey	10	1.00%
+R13	2k	Resistors_SMD:R_0805	0.021	Digikey	10	1.00%
+R8	510	Resistors_SMD:R_0805	0.021	Digikey	10	1.00%
+R9	1k	Resistors_SMD:R_0805	0.021	Digikey	10	1.00%
+R10	2k	Resistors_SMD:R_0805	0.021	Digikey	10	1.00%
+R5	510	Resistors_SMD:R_0805	0.021	Digikey	10	1.00%
+R6	1k	Resistors_SMD:R_0805	0.021	Digikey	10	1.00%
+R7	2k	Resistors_SMD:R_0805	0.021	Digikey	10	1.00%
+F1	0.75A HOLD 6V PTC	Resistors_SMD:R_1210	0.2544	Newark	10	
+U4	NCP1117ST33T3G	Footprints:SOT223_PWR	0.49	Digikey	1	LDO Not Needed
+C14	10uF	SMD_Packages:SMD-1206_Pol	0.4848	Newark	5	Tantalum, 6.3V
+C15	10uF	SMD_Packages:SMD-1206_Pol	0.4848	Newark	5	Tantalum, 6.3V
+C13	47uF	SMD_Packages:SMD-1206_Pol	0.0672	Newark	1	Tantalum, 6.3V
+P6	CONN_02X03	Pin_Headers:Pin_Header_Straight_2x03	0.06			
+J2	VGA-HD-15	Footprints:HD15_B-HD15F	1.18	Newark	1	Newark 54M6031
+C16	22pF	Capacitors_SMD:C_0603	0.024	Digikey	10	X7R
+C17	22pF	Capacitors_SMD:C_0603	0.024	Digikey	10	X7R
+Y1	7.3728 MHz	crystal:HC49_sm	0.325	eBay	20	MFG Not Important
+P1	CONN_01X03	Pin_Headers:Pin_Header_Straight_1x03	0.03			
+P2	CONN_01X05	Pin_Headers:Pin_Header_Straight_1x05	0.05			
+P3	CONN_01X02	Pin_Headers:Pin_Header_Straight_1x02	0.02			
+P4	CONN_02X03	Pin_Headers:Pin_Header_Straight_2x03	0.06			
+P7	CONN_01X30	Footprints:DF40C-30DS-0.4V				Optional 
+D1	Green LED	LEDs:LED-0603	0.0495	Jameco		You Pick Color
+R14	330 Ohm	Resistors_SMD:R_0805	0.212	Digikey		5.00%
+R15	150 Ohm	Resistors_SMD:R_0805	0.212	Digikey		5.00%
+R16	150 Ohm	Resistors_SMD:R_0805	0.194	Digikey		5.00%
+D2	Yellow LED	LEDs:LED-0603	0.0495	Jameco		You Pick Color
+D3	Orange LED	LEDs:LED-0603	0.0495	Jameco		You Pick Color
+P5	USB_B	Connect:USB_B	0.5528	Newark		Newark 14N8154
+			22.88399			

@@ -7,8 +7,13 @@
 #include "vgatonic.h"
 
 // Change these to something appropriate for your board.
-#define SPI_BUS_SPEED 			25000000
-#define SPI_FRAMES_PER_SECOND 	        10.1
+#define SPI_BUS_SPEED 				25000000
+#define SPI_BUS_SPEED_WS 			25000000
+
+// Based on x/640/480/8
+#define SPI_FRAMES_PER_SECOND 	        10
+// Based on x/848/480/8
+#define SPI_FRAMES_PER_SECOND_WS 	    7.5
 
 /* For many boards, only the next few lines need to be changed */
 
@@ -18,8 +23,15 @@
 /* Define the pseudo chip select.  We need this so we can hold it low for up to 307200 times in a row for a full screen write in 640*480*8 without the hardware SPI
    Device interfering */
 #define FAKE_CS					49
+
 // Define the maximum number of SPI writes your hardware can support. For Edison, the hardware supports 8192 words or 16384 bytes, so limit your writes to that size.
+// Even though widescreen is even larger, we still have to break up our writes.
 #define MAX_SPI_WRITES			16384
+
+// Do we want to use widescreen?  This macro sets it up in the kernel.
+// When you insmod or modprobe, use "insmod <thismodule>.ko widescreen=1" and widescreen mode will turn on
+static int widescreen = 0;             /* default to no, use 4:3 */
+module_param(widescreen, bool, 0644);  /* a Boolean type */
 
 
 const char this_driver_name[] = "vgatonic_card_on_spi";
@@ -27,7 +39,9 @@ const char this_driver_name[] = "vgatonic_card_on_spi";
 static struct vgatonicfb_platform_data vgatonicfb_data = {
        .cs_gpio       			= FAKE_CS,
        .spi_speed 		       	= SPI_BUS_SPEED,
-       .spi_frames_per_second 	        = SPI_FRAMES_PER_SECOND,
+       .spi_frames_per_second 	= SPI_FRAMES_PER_SECOND,
+       .spi_speed_ws 			= SPI_BUS_SPEED_WS,
+       .spi_frames_per_second_ws= SPI_FRAMES_PER_SECOND_WS,
        .max_spi_writes		 	= MAX_SPI_WRITES,
 };
 
@@ -39,7 +53,6 @@ static int tng_ssp_spi2_FS_gpio = 111;
 static struct intel_mid_ssp_spi_chip chip = {
 	.burst_size = DFLT_FIFO_BURST_SIZE,
 	.timeout = DFLT_TIMEOUT_VAL,
-	/* SPI DMA is currently not usable on Tangier */
 	.dma_enabled = true,
 	.cs_control = tng_ssp_spi_cs_control,
 	.platform_pinmux = tng_ssp_spi_platform_pinmux,
@@ -54,10 +67,6 @@ static void tng_ssp_spi_platform_pinmux(void)
 {
 	int err;
 	int saved_muxing;
-	/* Request Chip Select gpios */
-	//saved_muxing = gpio_get_alt(tng_ssp_spi2_FS_gpio);
-
-	//lnw_gpio_set_alt(tng_ssp_spi2_FS_gpio, LNW_GPIO);
 	err = gpio_request_one(tng_ssp_spi2_FS_gpio,
 			GPIOF_DIR_OUT|GPIOF_INIT_HIGH, "Arduino Shield SS");
 	if (err) {
@@ -115,7 +124,15 @@ static int __init add_vgatonicfb_device_to_bus(void)
 	Don't push the speed too high! */
 
 	spi_device->dev.platform_data 	= &vgatonicfb_data;
-	spi_device->max_speed_hz		= SPI_BUS_SPEED;
+	struct vgatonicfb_platform_data *pdata 	= spi_device->dev.platform_data;
+	if (widescreen) {
+		pdata->useWidescreen = true;
+		spi_device->max_speed_hz		= SPI_BUS_SPEED_WS;
+	} else {
+		pdata->useWidescreen = false;
+		spi_device->max_speed_hz		= SPI_BUS_SPEED;
+	}
+	
 	spi_device->mode 				= SPI_MODE_0;
 	spi_device->bits_per_word 		= 8;
 	spi_device->irq 				= -1;

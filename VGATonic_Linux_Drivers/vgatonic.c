@@ -1,4 +1,4 @@
-/*
+/* 
  * FB driver for VGATONIC LCD controller
  * for generic 640x480x8bpp VGA monitor driving.
  * (Basically, anything with a VGA port should support this mode)
@@ -42,15 +42,12 @@ static struct fb_fix_screeninfo vgatonicfb_fix = {
 	.xpanstep 		= 0,
 	.ypanstep 		= 0,
 	.ywrapstep 		= 0, 
-	.line_length 	= WIDTH*BPP/8,
 	.accel 			= FB_ACCEL_NONE,
 };
 
 
 static struct fb_var_screeninfo vgatonicfb_var = {
-	.xres 			= WIDTH,
 	.yres 			= HEIGHT,
-	.xres_virtual 	= WIDTH,
 	.yres_virtual 	= HEIGHT,
 	.bits_per_pixel = BPP,
 	.grayscale      = 0,
@@ -126,8 +123,16 @@ static int vgatonic_write_data_buf(struct vgatonicfb_par *par, u8 *txbuf, int si
  */
 static int vgatonicfb_hardware_move(struct vgatonicfb_par *par, int dirty_line)
 {
-	int width = vgatonicfb_resolution_table[par->resIndex].width;
-	int height = vgatonicfb_resolution_table[par->resIndex].height;
+	int width = 0, height = 0; 
+
+	if (!par->isWideScreen) {
+		width = vgatonicfb_resolution_table[par->resIndex].width;
+		height = vgatonicfb_resolution_table[par->resIndex].height;
+	} else {
+		width = vgatonicfb_widescreen_resolution_table[par->resIndex].width;
+		height = vgatonicfb_widescreen_resolution_table[par->resIndex].height;
+	}
+
 	int start_line = 0;
 	u8 HARDWARE_MOVE = 0b00000000;
 	
@@ -167,15 +172,41 @@ static int vgatonicfb_update_mode(struct vgatonicfb_par *par)
 {
 	gpio_set_value(par->cs, 1);
 
-	// Base value 640x480x8bpp
-	u8 MODECHANGE = 0b00000000;
-
-	// Resolution & Bit depth change
-	MODECHANGE |= vgatonicfb_resolution_table[par->resIndex].modeOrByte;
-	MODECHANGE |=   vgatonicfb_bitdepth_table[par->bppIndex].modeOrByte;
-
 	/* Chip Select low to warn VGATonic something is coming; in this case a mode change */
 	gpio_set_value(par->cs, 0);
+
+	// Base value 640x480x8bpp or 848x480x8bpp
+	u8 MODECHANGE = 0b00000000;
+
+	// Resolution & Bit depth change, adjusted for widescreen
+
+	// Increase or decrease frames per second
+	int newFPS = par->spiFPS;
+	if (!par->isWideScreen) {
+		MODECHANGE |= vgatonicfb_resolution_table[par->resIndex].modeOrByte;
+		newFPS << vgatonicfb_bitdepth_table[par->bppIndex].modeOrByte;
+		switch (vgatonicfb_resolution_table[par->resIndex].modeOrByte) {
+			case 1:
+				newFPS *= 4;
+				break;
+			case 2:
+				newFPS *= 16;
+				break ;
+			case 3:
+				newFPS *= 64;
+				break ;
+		}
+	} else {
+		MODECHANGE |= vgatonicfb_widescreen_resolution_table[par->resIndex].modeOrByte;
+		newFPS << vgatonicfb_bitdepth_table[par->bppIndex].modeOrByte;
+		switch (vgatonicfb_widescreen_resolution_table[par->resIndex].modeOrByte) {
+			case 1:
+				newFPS *= 4;
+				break;
+		}
+	}
+
+	MODECHANGE |=   vgatonicfb_bitdepth_table[par->bppIndex].modeOrByte;
 
 	struct spi_message	m;
 	struct spi_transfer	t = {
@@ -188,21 +219,7 @@ static int vgatonicfb_update_mode(struct vgatonicfb_par *par)
 
 	int retval = spi_sync(par->spi, &m);
 
-	// Increase or decrease frames per second
-	int newFPS = par->spiFPS;
-	newFPS << vgatonicfb_bitdepth_table[par->bppIndex].modeOrByte;
-
-	switch (vgatonicfb_resolution_table[par->resIndex].modeOrByte) {
-		case 1:
-			newFPS *= 4;
-			break;
-		case 2:
-			newFPS *= 16;
-			break ;
-		case 3:
-			newFPS *= 64;
-			break ;
-	}
+	
 	if (newFPS > 60) newFPS = 60;
 
 	// Change our update speed
@@ -243,8 +260,15 @@ static void vgatonicfb_update_display(struct vgatonicfb_par *par, const struct f
 
 
 	/* Current settings of monitor */
-	int height = vgatonicfb_resolution_table[par->resIndex].height;
-	int width  =  vgatonicfb_resolution_table[par->resIndex].width;
+	int width  =  0, height = 0;
+	if (!par->isWideScreen) {
+		width = vgatonicfb_resolution_table[par->resIndex].width;
+		height = vgatonicfb_resolution_table[par->resIndex].height;
+	} else {
+		width = vgatonicfb_widescreen_resolution_table[par->resIndex].width;
+		height = vgatonicfb_widescreen_resolution_table[par->resIndex].height;
+	}
+
 	int bpp    =      vgatonicfb_bitdepth_table[par->bppIndex].bpp;
 
 
@@ -263,14 +287,22 @@ static void vgatonicfb_update_display(struct vgatonicfb_par *par, const struct f
 	    dh = dirty_rect->height;
 	} else {
 	    dx = dy = 0;
-	    dw = WIDTH;
+	    if (!par->isWideScreen)
+	    	dw = WIDTH;
+	    else
+	    	dw = WIDTH_WIDESCREEN;
 	    dh = HEIGHT;
 	}
 
 
 	/* Adjusted for screen size */
 	dh = (dh / (480/height));
-	dw = (dw / (640/width));
+
+	if (!par->isWideScreen)
+		dw = (dw / (640/width));
+	else
+		dw = (dw / (848/width));
+
 	/* Adjusted width again for bit depth */
 	int bitScaler = 8/bpp;
 	dw /= bitScaler;
@@ -280,7 +312,10 @@ static void vgatonicfb_update_display(struct vgatonicfb_par *par, const struct f
 	// We have no way of skipping pixels yet, but we can optimize by not writing beyond
 	// where we actually have changed pixels.  No need to write the bottom right when the menubar changes.
 
-	vmem_start = (WIDTH*dy + dx)*BPP/8; // No need to change this code since we are setting it to 0,0 in the rect.
+	if (!par->isWideScreen)
+		vmem_start = (WIDTH*dy + dx)*BPP/8; // No need to change this code since we are setting it to 0,0 in the rect.
+	else
+		vmem_start = (WIDTH_WIDESCREEN*dy + dx)*BPP/8;
 
 
 	/* 8 bit part, 16 bit pixels */
@@ -324,7 +359,10 @@ static void vgatonicfb_update_display(struct vgatonicfb_par *par, const struct f
 		#endif
 		// Increase the counters by one spot.  16 bit vs 8 bit variable, remember
 		smem += dw*BPPVGATONIC/8;
-		vmem16 += WIDTH*BPP/16;
+		if (!par->isWideScreen)
+			vmem16 += WIDTH*BPP/16;
+		else 
+			vmem16 += WIDTH_WIDESCREEN*BPP/16;
 	}
 
 
@@ -358,9 +396,9 @@ static void vgatonicfb_deferred_io(struct fb_info *info, struct list_head *pagel
 	int page_high = -1;
 	struct fb_fillrect rect;
 	int i;
+	struct vgatonicfb_par *par = info->par;
 
 	for ( i=0; i<npages; i++ ) {
-		struct vgatonicfb_par *par = info->par;
 		if (test_and_clear_bit(i, &par->deferred_pages_mask)) {
 			if ( page_high == -1 )
 				page_low = i;
@@ -391,14 +429,23 @@ static void vgatonicfb_deferred_io(struct fb_info *info, struct list_head *pagel
 	// 640*480*8 = 2,457,600 bits/frame, 640*50*8 = 256,000 bits/frame, or 89.6% less congestion on SPI.
 
 	rect.dx = 0;
-	rect.width = WIDTH;
 
-	rect.dy = page_low * PAGE_SIZE / (WIDTH*BPP/8);
 
 	/* If we check dirty pixels, we can theoretically cut down writes here by using
-		the VGATonic feature to move to a line */
+	the VGATonic feature to move to a line */
+	if ( !par->isWideScreen ) {
+		rect.width = WIDTH;
+		rect.dy = page_low * PAGE_SIZE / (WIDTH*BPP/8);
+		rect.height = (page_high - page_low + 1) * PAGE_SIZE / (WIDTH*BPP/8);
+	 } else {
+		rect.width = WIDTH_WIDESCREEN;
+		rect.dy = page_low * PAGE_SIZE / (WIDTH_WIDESCREEN*BPP/8);
+		rect.height = (page_high - page_low + 1) * PAGE_SIZE / (WIDTH_WIDESCREEN*BPP/8);
+	}
 
-	rect.height = (page_high - page_low + 1) * PAGE_SIZE / (WIDTH*BPP/8);
+
+
+	
 
 	vgatonicfb_update_display(info->par, &rect);
 }
@@ -422,8 +469,12 @@ static void vgatonicfb_deferred_io_touch(struct fb_info *info, const struct fb_f
 		int index_lo, index_hi, i;
 
 		offset = rect->dy * info->fix.line_length;
+
 		index_lo = offset >> PAGE_SHIFT;
+
+		
 		offset = (rect->dy + rect->height - 1) * info->fix.line_length;
+
 		index_hi = offset >> PAGE_SHIFT;
 
 		for ( i=index_lo; i<=index_hi; i++ )
@@ -459,12 +510,25 @@ static int vgatonicfb_check_var(struct fb_var_screeninfo *var, struct fb_info *i
     
     int foundResIndex = par->resLength;
     int i = foundResIndex -1;
-    while (i >= 0) {
-    	if ( var->xres <= vgatonicfb_resolution_table[i].width && var->yres <= vgatonicfb_resolution_table[i].height ) {
-    		foundResIndex = i;
-    	}
-    	--i;
-    }
+
+    // Look for it in our regular 4:3 or 16:9 tables
+    if (!par->isWideScreen) {
+	    while (i >= 0) {
+	    	if ( var->xres <= vgatonicfb_resolution_table[i].width && var->yres <= vgatonicfb_resolution_table[i].height ) {
+	    		foundResIndex = i;
+	    	}
+	    	--i;
+	    }
+	} else {
+		while (i >= 0) {
+	    	if ( var->xres <= vgatonicfb_widescreen_resolution_table[i].width && var->yres <= vgatonicfb_widescreen_resolution_table[i].height ) {
+	    		foundResIndex = i;
+	    	}
+	    	--i;
+	    }
+	}
+
+
     if (foundResIndex == par->resLength)
     	return -EINVAL;
     par->resIndex = foundResIndex;
@@ -518,10 +582,20 @@ static int vgatonicfb_check_var(struct fb_var_screeninfo *var, struct fb_info *i
     	--i;
     }
     par->bppIndex = foundBppIndex;
-    var->xres 				= vgatonicfb_resolution_table[par->resIndex].width;
-    var->yres 				= vgatonicfb_resolution_table[par->resIndex].height;
-    var->xres_virtual 		= vgatonicfb_resolution_table[par->resIndex].width;
-    var->yres_virtual 		= vgatonicfb_resolution_table[par->resIndex].height;
+    if (!par->isWideScreen) {
+    	var->xres 				= vgatonicfb_resolution_table[par->resIndex].width;
+    	var->xres_virtual 		= vgatonicfb_resolution_table[par->resIndex].width;
+    	var->yres 				= vgatonicfb_resolution_table[par->resIndex].height;
+    	var->yres_virtual 		= vgatonicfb_resolution_table[par->resIndex].height;
+    } else {
+    	var->xres 				= vgatonicfb_widescreen_resolution_table[par->resIndex].width;
+    	var->xres_virtual 		= vgatonicfb_widescreen_resolution_table[par->resIndex].width;
+    	var->yres 				= vgatonicfb_widescreen_resolution_table[par->resIndex].height;
+    	var->yres_virtual 		= vgatonicfb_widescreen_resolution_table[par->resIndex].height;
+    }
+
+
+
 
 	// Always have 16 bits as our bits per pixel mode - but, yes, internally we are setting it up so
 	// we convert to the 'other' color depths.  Take a look at vgatonic.h to see the conversion macros.
@@ -559,22 +633,23 @@ static int vgatonicfb_blank(int blank_mode, struct fb_info *info)
 }
 
 /* Hit the CS pin a few times to reset the pixel to 0,0 on VGATonic 
-   then paint a pleasing tst pattern so you know it is working. */
+   then paint a pleasing test pattern so you know it is working. */
 static int vgatonicfb_init_display(struct vgatonicfb_par *par)
 {
-	
 
 	vgatonic_reset(par);
 
 	/* Fill display mem with a gradient pattern */
+	int fillwidth = WIDTH;
+	if (par->isWideScreen) fillwidth = WIDTH_WIDESCREEN;
 
 	if ( 1 ) { 
 		u16 *vmem16 = (u16 *)par->info->screen_base;
 		int x, y;
 		for ( y=0; y<HEIGHT; y++ )
-			for ( x=0; x<WIDTH; x++ ) {
+			for ( x=0; x<fillwidth; x++ ) {
 				u16 pixel;
-				pixel = ((WIDTH-x)>>2) << 11 | (x>>2) << 5 | (y>>3) << 0;
+				pixel = ((fillwidth-x)>>2) << 11 | (x>>2) << 5 | (y>>3) << 0;
 				*vmem16++ = pixel;
 			}
 	}
@@ -700,7 +775,14 @@ static int vgatonicfb_probe (struct spi_device *spi)
 {
 	int chip 								= spi_get_device_id(spi)->driver_data;
 	struct vgatonicfb_platform_data *pdata 	= spi->dev.platform_data;
-	int vmem_size 							= WIDTH*HEIGHT*BPP/8;
+	int vmem_size;
+
+	if (!pdata->useWidescreen) {
+		vmem_size = WIDTH*HEIGHT*BPP/8;
+	} else {
+		vmem_size = WIDTH_WIDESCREEN*HEIGHT*BPP/8;
+	}
+
 	u8 *vmem 								= NULL;
 	u8 *spi_writing_buffer 					= NULL;
 	struct fb_info *info;
@@ -748,6 +830,7 @@ static int vgatonicfb_probe (struct spi_device *spi)
 	info->fbops 			= &vgatonicfb_ops;
 	info->fix 				= vgatonicfb_fix;
 	info->fix.smem_len 		= vmem_size;
+		
 	info->var 				= vgatonicfb_var;
 	/* RGB565 -see notes elsewhere for why. */
 	info->var.red.offset 	= 11;
@@ -758,6 +841,17 @@ static int vgatonicfb_probe (struct spi_device *spi)
 	info->var.blue.length 	= 5;
 	info->var.transp.offset = 0;
 	info->var.transp.length = 0;
+	/* Setting width for 640 or 848 depending on normal or widescreen */
+	if (!pdata->useWidescreen) {
+		info->fix.line_length 	= WIDTH*BPP/8;
+		info->var.xres 			= WIDTH;
+		info->var.xres_virtual 	= WIDTH;
+	} else {
+		info->var.xres 			= WIDTH_WIDESCREEN;
+		info->var.xres_virtual 	= WIDTH_WIDESCREEN;
+		info->fix.line_length 	= WIDTH_WIDESCREEN*BPP/8;
+	}
+
 	info->flags             = FBINFO_FLAG_DEFAULT | FBINFO_VIRTFB;
 	info->fbdefio           = &vgatonicfb_defio;
 
@@ -766,14 +860,31 @@ static int vgatonicfb_probe (struct spi_device *spi)
 	fb_deferred_io_init(info);
 
 	par = info->par;
+	if (pdata->useWidescreen == false) {
+		par->isWideScreen 		= false;
+		par->resIndex 			= 3;
+		par->resLength 			= 4;
+		par->spiFPS         	= pdata->spi_frames_per_second;
+		par->spiSpeed         	= pdata->spi_speed;
+	} else {	
+		par->isWideScreen 		= true;
+		par->resIndex 			= 1;
+		par->resLength 			= 2;
+		// Widescreen has roughly 1/3 more pixels, so speed should decrese by 1/4
+		par->spiFPS         	= pdata->spi_frames_per_second_ws;
+		par->spiSpeed         	= pdata->spi_speed_ws;
+	}	
+
+
 	/* See notes in header - setting a bunch of defaults. */
 	par->bppIndex 			= 3;
-	par->resIndex 			= 3;
 	par->bppLength 			= 4;
-	par->resLength 			= 4;
-	par->spiSpeed         	= pdata->spi_speed;
-	par->spiFPS         	= pdata->spi_frames_per_second;
+
+
+	
 	par->maxSPIBytes        = pdata->max_spi_writes;
+
+		
 
 	par->info = info;
 	par->spi = spi;

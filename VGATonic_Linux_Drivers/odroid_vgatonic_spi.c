@@ -3,8 +3,13 @@
 #include "vgatonic.h"
 
 // Change these to something appropriate for your board.
-#define SPI_BUS_SPEED 			32000000
-#define SPI_FRAMES_PER_SECOND 	12.75
+#define SPI_BUS_SPEED 				32000000
+#define SPI_BUS_SPEED_WS 			32000000
+
+// Based on x/640/480/8
+#define SPI_FRAMES_PER_SECOND 		12.75
+// Based on x/848/480/8
+#define SPI_FRAMES_PER_SECOND_WS 	9.75
 
 /* For many boards, only the next few lines need to be changed */
 
@@ -15,7 +20,12 @@
    Device interfering */
 #define FAKE_CS					103
 // Define the maximum number of SPI writes your hardware can support.  For many, it's unlimited, so use 307200.
-#define MAX_SPI_WRITES			307200
+#define MAX_SPI_WRITES			407040
+
+// Do we want to use widescreen?  This macro sets it up in the kernel.
+// When you insmod or modprobe, use "insmod <thismodule>.ko widescreen=1" and widescreen mode will turn on
+static int widescreen = 0;             /* default to no, use 4:3 */
+module_param(widescreen, bool, 0644);  /* a Boolean type */
 
 
 const char this_driver_name[] = "vgatonic_card_on_spi";
@@ -24,6 +34,8 @@ static struct vgatonicfb_platform_data vgatonicfb_data = {
        .cs_gpio       			= FAKE_CS,
        .spi_speed 				= SPI_BUS_SPEED,
        .spi_frames_per_second 	= SPI_FRAMES_PER_SECOND,
+       .spi_speed_ws 			= SPI_BUS_SPEED_WS,
+       .spi_frames_per_second_ws= SPI_FRAMES_PER_SECOND_WS,
        .max_spi_writes		 	= MAX_SPI_WRITES,
 };
 
@@ -71,7 +83,14 @@ static int __init add_vgatonicfb_device_to_bus(void)
 
 	/* All the rules we're set to print - use mode 3!  Don't push the speed too high! */
 	spi_device->dev.platform_data 	= &vgatonicfb_data;
-	spi_device->max_speed_hz		= SPI_BUS_SPEED;
+	struct vgatonicfb_platform_data *pdata 	= spi_device->dev.platform_data;
+	if (widescreen) {
+		pdata->useWidescreen = true;
+		spi_device->max_speed_hz		= SPI_BUS_SPEED_WS;
+	} else {
+		pdata->useWidescreen = false;
+		spi_device->max_speed_hz		= SPI_BUS_SPEED;
+	}
 	spi_device->mode 				= SPI_MODE_3;
 	spi_device->bits_per_word 		= 8;
 	spi_device->irq 				= -1;

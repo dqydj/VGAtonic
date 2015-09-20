@@ -14,6 +14,7 @@
    depth to get something workable once it is initialized. */
 
 #define DRVNAME					"vgatonicfb"
+#define WIDTH_WIDESCREEN		848
 #define WIDTH					640
 #define HEIGHT					480
 
@@ -121,7 +122,10 @@ B: 0-4
 struct vgatonicfb_platform_data {
 	int cs_gpio;
 	int spi_speed;
+	int spi_speed_ws;
 	int spi_frames_per_second;
+	int spi_frames_per_second_ws;
+	bool useWidescreen;
 	int max_spi_writes;
 };
 
@@ -142,7 +146,8 @@ struct vgatonicfb_par {
 	int    	cs;
 	int 	spiSpeed;
 	int 	spiFPS;
-        int     maxSPIBytes;
+    int     maxSPIBytes;
+    bool    isWideScreen;
 	volatile long unsigned int deferred_pages_mask;
 };
 
@@ -175,6 +180,8 @@ struct vgatonicfb_par {
 
 				*/
 
+/* Math for widescreen is similar, just substitute 848 for 640 or 424 for 320 */
+
 struct hardware_resolution_info {
 	char id[16];      /* Just a name */
     int  width;       
@@ -187,7 +194,6 @@ struct hardware_bitdepth_info {
     int  bpp;         /* Our bitdepth */
     u8   modeOrByte;  /* Byte to OR with our master byte to change/set mode */
 };
-
 
 /* Hardware supported (read: accelerated) on VGATonic.  Lesser resolutions require less SPI writes. */
 /* Keep these in ascending order for later comparisons to pick the proper one for a virtual frame size. */
@@ -214,6 +220,24 @@ static struct hardware_resolution_info vgatonicfb_resolution_table[] = {
 	{  /* Base default (and highest resolution) 640x480 */
 		.id 	= "640x480",
 		.width 	= 640,
+		.height = 480,
+		.modeOrByte	= 0b00000000,
+	}
+};
+
+
+/* Widescreen resolutions supported for widescreen firmware of VGATonic only. */
+
+static struct hardware_resolution_info vgatonicfb_widescreen_resolution_table[] = {
+	{  /* Lowest widescreen resolution, 424x240 */
+		.id 	= "424x240",
+		.width 	= 424,
+		.height = 240,
+		.modeOrByte	= 0b00000001,
+	},
+	{  /* Base default (and highest resolution) 640x480 */
+		.id 	= "848x480",
+		.width 	= 848,
 		.height = 480,
 		.modeOrByte	= 0b00000000,
 	}

@@ -1,0 +1,87 @@
+NET "CLK" LOC = "P22"; 			# Input from LTC693 Programmable Oscillator
+
+
+// Outside World SPI Interface
+NET "EXT_SCK" 			LOC = "P6";
+NET "EXT_MOSI" 		LOC = "P7";
+NET "EXT_MISO" 		LOC = "P8";
+NET "EXT_SEL_CPLD" 	LOC = "P9";
+
+// Outside World SPI Interface
+NET "AVR_SCK" 			LOC = "P10";
+NET "AVR_MOSI" 		LOC = "P11";
+//NET "AVR_MISO" 		LOC = "P12";
+//NET "AVR_SEL_CPLD" 	LOC = "P13";
+// Control Signal to Ignore Outside SPI - Switch 1
+//NET "SW_1" 				LOC = "P2";
+NET "AVR_CPLD_EXT_1"	LOC = "P14";
+NET "AVR_CPLD_EXT_2"	LOC = "P15";
+
+// VGA Interface
+NET "Pixel<8>"			LOC = "P1"; // Red MSB
+NET "Pixel<7>"			LOC = "P97"; // Red Middle
+NET "Pixel<6>"			LOC = "P96"; // Red LSB
+
+NET "Pixel<5>"			LOC = "P95"; // Green MSB
+NET "Pixel<4>"			LOC = "P94"; // Green Middle
+NET "Pixel<3>"			LOC = "P93"; // Green LSB
+
+NET "Pixel<2>"			LOC = "P92"; // Blue MSB
+NET "Pixel<1>"			LOC = "P91"; // Blue Middle
+NET "Pixel<0>"			LOC = "P90"; // Blue LSB - Optional; needed for true greys
+
+NET "VSYNC"				LOC = "P89"; // Vertical Sync Signal
+NET "HSYNC"				LOC = "P87"; // Vertical Sync Signal
+
+// Memory - Addresses, Data, Control Signals
+
+NET "WE_LOW"			LOC = "P56"; // Write enable, active low
+NET "CE_LOW"			LOC = "P63"; // Chip enable, active low
+NET "OE_LOW"			LOC = "P80"; // Output enable, active low
+
+NET "ADDR<0>"			LOC = "P68";
+NET "ADDR<1>"			LOC = "P67";
+NET "ADDR<2>"			LOC = "P66";
+NET "ADDR<3>"			LOC = "P65";
+NET "ADDR<4>"			LOC = "P64";
+NET "ADDR<5>"			LOC = "P55";
+NET "ADDR<6>"			LOC = "P54";
+NET "ADDR<7>"			LOC = "P53";
+NET "ADDR<8>"			LOC = "P52";
+NET "ADDR<9>"			LOC = "P50";
+NET "ADDR<10>"			LOC = "P70";
+NET "ADDR<11>"			LOC = "P71";
+NET "ADDR<12>"			LOC = "P72";
+NET "ADDR<13>"			LOC = "P73";
+NET "ADDR<14>"			LOC = "P74";
+NET "ADDR<15>"			LOC = "P81";
+NET "ADDR<16>"			LOC = "P82";
+NET "ADDR<17>"			LOC = "P85";
+NET "ADDR<18>"			LOC = "P86";
+
+NET "DATA<0>"			LOC = "P61";
+NET "DATA<1>"			LOC = "P60";
+NET "DATA<2>"			LOC = "P59";
+NET "DATA<3>"			LOC = "P58";
+NET "DATA<4>"			LOC = "P76";
+NET "DATA<5>"			LOC = "P77";
+NET "DATA<6>"			LOC = "P78";
+NET "DATA<7>"			LOC = "P79";
+
+// GPIO Header, Bottom of Board
+//NET "CPLD_GPIO<1>" LOC = "P28"; 		# CPLD GPIO 1
+//NET "CPLD_GPIO<2>" LOC = "P29"; 		# CPLD GPIO 2
+//NET "CPLD_GPIO<3>" LOC = "P30"; 		# CPLD GPIO 3
+//NET "CPLD_GPIO<4>" LOC = "P32"; 		# CPLD GPIO 4
+//NET "CPLD_GPIO<5>" LOC = "P33"; 		# CPLD GPIO 5
+//NET "CPLD_GPIO<6>" LOC = "P34"; 		# CPLD GPIO 6
+//NET "CPLD_GPIO<7>" LOC = "P35"; 		# CPLD GPIO 7
+//NET "CPLD_GPIO<8>" LOC = "P36"; 		# CPLD GPIO 8
+//NET "CPLD_GPIO<9>" LOC = "P37"; 		# CPLD GPIO 9
+//NET "CPLD_GPIO<10>" LOC = "P39"; 		# CPLD GPIO 10
+//NET "CPLD_GPIO<11>" LOC = "P40"; 		# CPLD GPIO 11
+//NET "CPLD_GPIO<12>" LOC = "P41"; 		# CPLD GPIO 12
+//NET "CPLD_GPIO<13>" LOC = "P42"; 		# CPLD GPIO 13
+//NET "CPLD_GPIO<14>" LOC = "P43"; 		# CPLD GPIO 14
+//NET "CPLD_GPIO<15>" LOC = "P46"; 		# CPLD GPIO 15
+//NET "CPLD_GPIO<16>" LOC = "P49"; 		# CPLD GPIO 16
